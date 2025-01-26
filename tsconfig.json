@@ -1,0 +1,11 @@
+{
+  "extends": "./.quasar/tsconfig.json",
+  "compilerOptions": {
+    "noUncheckedIndexedAccess": true,
+    "strictNullChecks": true,
+    "useDefineForClassFields": false,
+    "target": "ES2022",
+    "experimentalDecorators": true,
+    "skipLibCheck": true,
+  }
+}
