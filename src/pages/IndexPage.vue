@@ -34,11 +34,12 @@
       </q-card-section>
       <q-card-section>
         <q-btn
-          :label="isReversed ? 'Login to Telos EVM' : 'Login to Telos Native'"
+          :label="getLoginButtonLabel()"
           color="secondary"
           text-color="white"
           no-caps
           class="full-width"
+          @click="handleLoginClick"
         />
       </q-card-section>
     </q-card>
@@ -125,7 +126,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, onMounted } from "vue";
+import { useSessionStore } from "src/stores/sessionStore"
+
+const sessionStore = useSessionStore()
 
 const isReversed = ref(false); // Flow direction: false = Native to EVM, true = EVM to Native
 const showBoidId = ref(false); // Toggles the Boid ID field for EVM to Native flow
@@ -138,6 +142,49 @@ const toggleDirection = () => {
   isReversed.value = !isReversed.value;
   showBoidId.value = false; // Reset Boid ID toggle when switching flow
 };
+
+onMounted(async() => {
+  await sessionStore.renew()
+})
+
+const isLoggedIn = ref(sessionStore.isLoggedIn)
+const loggedAccount = ref(sessionStore.session?.actor)
+
+watch(() => sessionStore.isLoggedIn, (newVal) => {
+  isLoggedIn.value = newVal
+})
+
+watch(() => sessionStore.session?.actor, (newVal) => {
+  loggedAccount.value = newVal
+})
+
+const login = async() => {
+  await sessionStore.login()
+}
+
+const logout = async() => {
+  await sessionStore.logout()
+}
+
+const isEvmLoggedIn = ref(false) // TODO: Connect to EVM session store
+
+const getLoginButtonLabel = () => {
+  if (isReversed.value) {
+    return isEvmLoggedIn.value ? 'Logout from Telos EVM' : 'Login to Telos EVM'
+  } else {
+    return isLoggedIn.value ? `Logout (${sessionStore.username})` : 'Login to Telos Native'
+  }
+}
+
+const handleLoginClick = async () => {
+  if (isReversed.value) {
+    // TODO: Handle EVM login/logout when store is available
+    console.log('EVM login/logout not yet implemented')
+  } else {
+    if (isLoggedIn.value) await logout()
+    else await login()
+  }
+}
 
 // Watch the toggle to update the destination address
 watch(showBoidId, (newValue) => {
