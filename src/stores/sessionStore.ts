@@ -1,8 +1,8 @@
 import { defineStore } from "pinia"
 import { LocalStorage } from "quasar"
 import { sessionLogin, sessionLogout, sessionRestore } from "src/lib/session"
-import type { APIClient } from "@wharfkit/antelope"
-import type { Session } from "@wharfkit/session";
+import { APIClient } from "@wharfkit/antelope"
+import { Session } from "@wharfkit/session";
 import { PermissionLevel } from "@wharfkit/session"
 
 export const useSessionStore = defineStore(
@@ -17,7 +17,7 @@ export const useSessionStore = defineStore(
     getters: {
       isLoggedIn: (state) => state.session !== undefined,
       username: (state) => state.session?.actor.toString() || "",
-      authorization: (state) => PermissionLevel.from(state.session?.permissionLevel as PermissionLevel || { actor: "boid", permission: "active" }),
+      authorization: (state) => PermissionLevel.from(state.session?.permissionLevel as PermissionLevel || { actor: "", permission: "" }),
       sessionState: (state) => state,
       whatChain: (state) => state.session?.chain.name || "",
       chainUrl: (state) => state.session?.chain.url,

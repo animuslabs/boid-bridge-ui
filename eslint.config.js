@@ -42,6 +42,7 @@ export default [
         'warn',
         { prefer: 'no-type-imports', disallowTypeAnnotations: false },
       ],
+      '@typescript-eslint/no-redundant-type-constituents': 'off',
     },
   },
   // https://github.com/vuejs/eslint-config-typescript

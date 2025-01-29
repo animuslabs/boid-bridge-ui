@@ -1,9 +1,9 @@
 import { configuration } from "src/lib/config";
-import type { Session } from "@wharfkit/session";
+import { Session } from "@wharfkit/session";
 import { SessionKit } from "@wharfkit/session";
 import { WebRenderer } from "@wharfkit/web-renderer";
 import { WalletPluginAnchor } from "@wharfkit/wallet-plugin-anchor";
-import { ref, type Ref } from "vue";
+import { ref, Ref } from "vue";
 import { getWorkingUrl } from "src/lib/helperFunctions";
 
 const session = ref<Session | undefined>(undefined) as Ref<Session | undefined>;

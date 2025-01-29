@@ -1,7 +1,7 @@
 <template>
-  <q-page class="column items-center justify-start q-pt-lg">
+  <q-page class="column items-center justify-start q-pt-md">
     <!-- Flow Direction Header -->
-    <div class="row items-center q-mb-lg justify-center">
+    <div class="row items-center q-mb-md justify-center">
       <q-btn
         class="direction-btn"
         @click="toggleDirection"
@@ -10,190 +10,127 @@
         text-color="white"
         no-caps
       >
-        <template v-slot:default>
-          {{ isReversed ? 'Telos EVM' : 'Telos Native' }}
-          <q-icon
-            name="chevron_right"
-            size="md"
-            class="q-mx-sm"
-          />
-          {{ isReversed ? 'Telos Native' : 'Telos EVM' }}
-        </template>
+      <template v-slot:default>
+        {{ isReversed ? 'Telos EVM ' : 'Telos Native ' }}
+        <q-icon name="chevron_right" size="md" class="q-mx-sm" />
+        {{ isReversed ? 'Telos Native' : 'Telos EVM' }}
+      </template>
       </q-btn>
     </div>
 
-    <!-- Login Card -->
-    <q-card
-      class="q-pa-md q-mb-md"
-      flat
-      bordered
-      style="background-color: var(--primary); color: white; min-width: 300px; max-width: 500px;"
-    >
-      <q-card-section>
-        <div class="text-h6 text-center">Login</div>
-      </q-card-section>
-      <q-card-section>
-        <q-btn
-          :label="getLoginButtonLabel()"
-          color="secondary"
-          text-color="white"
-          no-caps
-          class="full-width"
-          @click="handleLoginClick"
-        />
-      </q-card-section>
-    </q-card>
-
-    <!-- Conditionally Rendered Cards -->
-    <q-card
-      v-if="!isReversed"
-      class="q-pa-md q-mb-md"
-      flat
-      bordered
-      style="background-color: var(--primary); color: white; min-width: 300px; max-width: 500px;"
-    >
-      <!-- Telos EVM Card -->
-      <q-card-section>
-        <div class="text-h6 text-center">Telos EVM</div>
-      </q-card-section>
-      <q-card-section>
-        <q-input
-          v-model="toAddress"
-          label="Destination Address"
-          filled
-          style="background-color: var(--secondary);"
-          label-color="white"
-          color="white"
-          :input-style="{ color: 'white' }"
-          dense
-        />
-      </q-card-section>
-    </q-card>
-
-    <q-card
-      v-if="isReversed"
-      class="q-pa-md q-mb-md"
-      flat
-      bordered
-      style="background-color: var(--primary); color: white; min-width: 300px; max-width: 500px;"
-    >
-      <!-- Telos Native Card -->
-      <q-card-section>
-        <div class="text-h6 text-center">Telos Native</div>
-      </q-card-section>
-      <q-card-section>
-        <q-input
-          v-model="toAddress"
-          label="Destination Address"
-          filled
-          style="background-color: var(--secondary);"
-          label-color="white"
-          color="white"
-          :input-style="{ color: 'white' }"
-          dense
-        />
-        <q-toggle
-          v-model="showBoidId"
-          label="Send to Boid ID"
-          color="secondary"
-          class="q-mt-md"
-        />
-        <q-input
-          v-if="showBoidId"
-          v-model="fromMemo"
-          label="Boid ID"
-          filled
-          dense
-          style="background-color: var(--secondary);"
-          label-color="white"
-          color="white"
-          :input-style="{ color: 'white' }"
-          class="q-mt-sm"
-        />
-      </q-card-section>
-    </q-card>
-
-    <!-- Transfer Button -->
-    <q-card-section class="q-mt-md">
-      <q-btn
-        label="Transfer"
-        color="primary"
-        no-caps
-        class="full-width"
+    <!-- Cards for Scenario 1: Telos Native -> Telos EVM -->
+    <div v-if="!isReversed">
+      <NativeLoginCard
+        :isLoggedIn="isLoggedIn"
+        :loggedAccount="loggedAccount"
+        :accountBalance="accountBalance"
+        :onNativeLogin="handleNativeLogin"
       />
-    </q-card-section>
+      <TelosEvmCard :canCoverFee="canCoverFee" />
+    </div>
+
+    <!-- Cards for Scenario 2: Telos EVM -> Telos Native -->
+    <div v-else>
+      <EvmLoginCard
+        :isLoggedIn="isEvmLoggedIn"
+        :onEvmLogin="handleEvmLogin"
+      />
+      <TelosNativeCard
+        v-model="toAddress"
+        v-model:showBoidId="showBoidId"
+        @update:isValid="isNativeAddressValid = $event"
+        @update:boidId="myBoidId = $event"
+      />
+    </div>
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from "vue";
-import { useSessionStore } from "src/stores/sessionStore"
+import { ref, watch, onMounted, computed } from "vue";
 
-const sessionStore = useSessionStore()
+import { useSessionStore } from "src/stores/sessionStore";
+import { loadAccount } from "src/lib/antelope";
+import TelosNativeCard from "src/components/cards/TelosNativeCard.vue";
+import TelosEvmCard from "src/components/cards/TelosEvmCard.vue";
+import NativeLoginCard from "src/components/cards/NativeLoginCard.vue";
+import EvmLoginCard from "src/components/cards/EvmLoginCard.vue";
+
+const sessionStore = useSessionStore();
 
 const isReversed = ref(false); // Flow direction: false = Native to EVM, true = EVM to Native
-const showBoidId = ref(false); // Toggles the Boid ID field for EVM to Native flow
-
-const fromMemo = ref("");
+const showBoidId = ref(false);
+const myBoidId = ref("");
 const toAddress = ref("");
+const accountBalance = ref<string>("0.0000 TLOS");
+const isNativeAddressValid = ref<boolean>(false);
+const canCoverFee = computed(() => {
+  const [balanceString] = accountBalance.value.split(" ");
+  const balanceNum = parseFloat(balanceString || "0");
+  return balanceNum >= 0.5;
+});
+const isLoggedIn = computed(() => sessionStore.isLoggedIn);
 
-// Toggle the direction of the flow
+const isEvmLoggedIn = ref(false);
+const loggedAccount = computed(() => sessionStore.session?.actor?.toString() || undefined);
+
+// Toggle the flow direction
 const toggleDirection = () => {
   isReversed.value = !isReversed.value;
-  showBoidId.value = false; // Reset Boid ID toggle when switching flow
+  showBoidId.value = false; // Reset toggle when switching flow
 };
 
-onMounted(async() => {
-  await sessionStore.renew()
-})
-
-const isLoggedIn = ref(sessionStore.isLoggedIn)
-const loggedAccount = ref(sessionStore.session?.actor)
-
-watch(() => sessionStore.isLoggedIn, (newVal) => {
-  isLoggedIn.value = newVal
-})
-
-watch(() => sessionStore.session?.actor, (newVal) => {
-  loggedAccount.value = newVal
-})
-
-const login = async() => {
-  await sessionStore.login()
-}
-
-const logout = async() => {
-  await sessionStore.logout()
-}
-
-const isEvmLoggedIn = ref(false) // TODO: Connect to EVM session store
-
-const getLoginButtonLabel = () => {
-  if (isReversed.value) {
-    return isEvmLoggedIn.value ? 'Logout from Telos EVM' : 'Login to Telos EVM'
-  } else {
-    return isLoggedIn.value ? `Logout (${sessionStore.username})` : 'Login to Telos Native'
+// Handle Native Login
+const handleNativeLogin = async () => {
+  try {
+    if (isLoggedIn.value) {
+      await sessionStore.logout();
+    } else {
+      await sessionStore.login();
+    }
+  } catch (error) {
+    console.error("Error during Native login/logout:", error);
   }
-}
+};
 
-const handleLoginClick = async () => {
-  if (isReversed.value) {
-    // TODO: Handle EVM login/logout when store is available
-    console.log('EVM login/logout not yet implemented')
-  } else {
-    if (isLoggedIn.value) await logout()
-    else await login()
+// Handle EVM Login
+const handleEvmLogin = () => {
+  try {
+    isEvmLoggedIn.value = !isEvmLoggedIn.value; // Placeholder toggle
+  } catch (error) {
+    console.error("Error during EVM login/logout:", error);
   }
-}
+};
 
-// Watch the toggle to update the destination address
-watch(showBoidId, (newValue) => {
-  if (newValue) {
-    toAddress.value = "boid"; // Auto-fill destination address when toggled on
-  } else {
-    toAddress.value = ""; // Clear destination address when toggled off
+// Sync session store state
+onMounted(async () => {
+  try {
+    await sessionStore.renew();
+  } catch (error) {
+    console.error("Error during session renewal:", error);
   }
 });
+
+watch(() => sessionStore.isLoggedIn, async (loggedIn) => {
+  if (loggedIn) {
+    // user is logged in -> check actor, fetch balance
+    const actorName = sessionStore.session?.actor?.toString();
+    if (actorName) {
+      try {
+        const accountData = await loadAccount(actorName);
+        accountBalance.value =
+          accountData?.value.toString() + " TLOS" || "0.0000 TLOS";
+      } catch (error) {
+        console.error("Error loading account:", error);
+        accountBalance.value = "0.0000 TLOS";
+      }
+    }
+  } else {
+    // user is logged out
+    accountBalance.value = "0.0000 TLOS";
+  }
+});
+
+
 </script>
 
 <style scoped>

@@ -31,7 +31,14 @@ export type Configuration = {
   other: OtherConfig;
 };
 
-
+const contracts = [
+  { name: "TokenBridge", contract: "evm.boid" },
+  { name: "TokenContract", contract: "token.boid" },
+  { name: "FeesContract", contract: "xsend.boid" },
+  { name: "SystemEVMcontract", contract: "eosio.evm" },
+  { name: "TLOStokenContract", contract: "eosio.token" },
+  { name: "BoidContract", contract: "boid" }
+]
 
 export const configuration: Configuration = {
   mainnet: {
@@ -42,13 +49,7 @@ export const configuration: Configuration = {
         { name: "EOS_Amsterdam", url: "https://telos.eu.eosamsterdam.net" },
       ],
       chain_id: "4667b205c6838ef70ff7988f6e8257e8be0e1284a2f59699054a018f743b1d11",
-      contracts: [
-        { name: "TokenBridge", contract: "evm.boid" },
-        { name: "TokenContract", contract: "token.boid" },
-        { name: "FeesContract", contract: "xsend.boid" },
-        { name: "SystemEVMcontract", contract: "eosio.evm" },
-        { name: "TLOStokenContract", contract: "eosio.token" }
-      ],
+      contracts: contracts
     },
     evm: {
       apis: [
@@ -69,12 +70,7 @@ export const configuration: Configuration = {
         { name: "EOS_USA", url: "https://test.telos.eosusa.io" },
       ],
       chain_id: "1eaa0824707c8c16bd25145493bf062aecddfeb56c736f6ba6397f3195f33c9f",
-      contracts: [
-        { name: "TokenBridge", contract: "evm.boid" },
-        { name: "TokenContract", contract: "token.boid" },
-        { name: "FeesContract", contract: "xsend.boid" },
-        { name: "SystemEVMcontract", contract: "eosio.evm" }
-      ],
+      contracts: contracts
     },
     evm: {
       apis: [
