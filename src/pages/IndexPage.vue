@@ -31,16 +31,8 @@
 
     <!-- Cards for Scenario 2: Telos EVM -> Telos Native -->
     <div v-else>
-      <EvmLoginCard
-        :isLoggedIn="isEvmLoggedIn"
-        :onEvmLogin="handleEvmLogin"
-      />
-      <TelosNativeCard
-        v-model="toAddress"
-        v-model:showBoidId="showBoidId"
-        @update:isValid="isNativeAddressValid = $event"
-        @update:boidId="myBoidId = $event"
-      />
+      <EvmLoginCard/>
+      <TelosNativeCard/>
     </div>
   </q-page>
 </template>
@@ -58,25 +50,18 @@ import EvmLoginCard from "src/components/cards/EvmLoginCard.vue";
 const sessionStore = useSessionStore();
 
 const isReversed = ref(false); // Flow direction: false = Native to EVM, true = EVM to Native
-const showBoidId = ref(false);
-const myBoidId = ref("");
-const toAddress = ref("");
 const accountBalance = ref<string>("0.0000 TLOS");
-const isNativeAddressValid = ref<boolean>(false);
 const canCoverFee = computed(() => {
   const [balanceString] = accountBalance.value.split(" ");
   const balanceNum = parseFloat(balanceString || "0");
   return balanceNum >= 0.5;
 });
 const isLoggedIn = computed(() => sessionStore.isLoggedIn);
-
-const isEvmLoggedIn = ref(false);
 const loggedAccount = computed(() => sessionStore.session?.actor?.toString() || undefined);
 
 // Toggle the flow direction
 const toggleDirection = () => {
   isReversed.value = !isReversed.value;
-  showBoidId.value = false; // Reset toggle when switching flow
 };
 
 // Handle Native Login
@@ -89,15 +74,6 @@ const handleNativeLogin = async () => {
     }
   } catch (error) {
     console.error("Error during Native login/logout:", error);
-  }
-};
-
-// Handle EVM Login
-const handleEvmLogin = () => {
-  try {
-    isEvmLoggedIn.value = !isEvmLoggedIn.value; // Placeholder toggle
-  } catch (error) {
-    console.error("Error during EVM login/logout:", error);
   }
 };
 

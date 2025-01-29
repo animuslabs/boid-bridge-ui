@@ -50,11 +50,11 @@
       <router-view />
     </q-page-container>
   </q-layout>
-  <MainDialogs ref="dialogsRef" />
+  <MainDialog ref="dialogsRef" />
 </template>
 
 <script setup lang="ts">
-import MainDialogs from 'src/components/dialogBoxes/MainDialogs.vue';
+import MainDialog from 'src/components/dialogBoxes/MainDialog.vue';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router'
 

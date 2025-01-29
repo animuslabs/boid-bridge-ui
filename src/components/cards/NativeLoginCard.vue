@@ -6,10 +6,11 @@
     style="background-color: var(--primary); color: white; min-width: 300px; max-width: 500px;"
   >
     <q-card-section>
-      <div class="text-h6 text-center">Login</div>
+      <div class="text-h6 text-center">LOGIN</div>
     </q-card-section>
     <q-card-section>
       <q-btn
+        icon="img:src/assets/AnchorWallet.png"
         :label="isLoggedIn ? `Logout ${loggedAccount || ''}` : 'Login to Telos Native'"
         color="secondary"
         text-color="white"
@@ -23,10 +24,10 @@
           Unstaked balance: <b>{{ accountBalance }}</b>
         </div>
         <div v-if="canCoverFee" class="text-amber-10">
-          0.5 TLOS Fee
+          {{ configuration.other.bridge_fee }} {{ configuration.other.evm_token_symbol }} Fee
         </div>
         <div v-if="!canCoverFee" class="text-negative text-bold">
-            0.5 TLOS Fee (Not enough TLOS!)
+          {{ configuration.other.bridge_fee }} {{ configuration.other.evm_token_symbol }} Fee (Not enough {{ configuration.other.evm_token_symbol }}!)
         </div>
       </div>
     </q-card-section>
@@ -35,6 +36,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { configuration } from 'src/lib/config'
 // Correctly define the props
 const props = defineProps<{
   isLoggedIn: boolean;

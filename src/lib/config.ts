@@ -8,21 +8,31 @@ type Contract = {
   contract: string;
 };
 
-type ChainConfig = {
+type ChainConfigEVM = {
+  apis: Api[];
+  chain_id: string;
+  chainIdHEX: string;
+  contracts: Contract[];
+};
+
+type ChainConfigNative = {
   apis: Api[];
   chain_id: string;
   contracts: Contract[];
 };
 
 type NetworkConfig = {
-  native: ChainConfig;
-  evm: ChainConfig;
+  native: ChainConfigNative;
+  evm: ChainConfigEVM;
 };
 
 type OtherConfig = {
   token_name: string;
   token_symbol: string;
   bridge_fee: number;
+  evm_token_name: string;
+  evm_token_symbol: string;
+  evm_token_decimals: number;
 }
 
 export type Configuration = {
@@ -53,9 +63,10 @@ export const configuration: Configuration = {
     },
     evm: {
       apis: [
-        { name: "Telos_Offical_EVM", url: "https://mainnet.telos.net/evm" }
+        { name: "Telos EVM", url: "https://mainnet.telos.net/evm" }
       ],
       chain_id: "40",
+      chainIdHEX: '0x28', // 40 in hex
       contracts: [
         { name: "TokenBridge", contract: "0xxxxx" },
         { name: "TokenContract", contract: "0xxx" }
@@ -74,9 +85,10 @@ export const configuration: Configuration = {
     },
     evm: {
       apis: [
-        { name: "Telos_Offical_EVM_Testnet", url: "https://testnet.telos.net/evm" }
+        { name: "Telos EVM Testnet", url: "https://testnet.telos.net/evm" }
       ],
       chain_id: "41",
+      chainIdHEX: '0x29', // 41 in hex
       contracts: [
         { name: "TokenBridge", contract: "0xxxxx" },
         { name: "TokenContract", contract: "0xxx" }
@@ -87,5 +99,8 @@ export const configuration: Configuration = {
     token_name: "BOID",
     token_symbol: "4,BOID",
     bridge_fee: 0.5,
+    evm_token_name: "Telos",
+    evm_token_symbol: "TLOS",
+    evm_token_decimals: 18,
   }
 };
