@@ -1,5 +1,5 @@
 [build.environment]
-  NODE_VERSION = "20.8.1"
+  NODE_VERSION = "20.18.1"
 [[plugins]]
   package = "@netlify/plugin-lighthouse"
 [[redirects]]
