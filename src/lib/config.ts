@@ -13,12 +13,14 @@ type ChainConfigEVM = {
   chain_id: string;
   chainIdHEX: string;
   contracts: Contract[];
+  explorer: string;
 };
 
 type ChainConfigNative = {
   apis: Api[];
   chain_id: string;
   contracts: Contract[];
+  explorer: string;
 };
 
 type NetworkConfig = {
@@ -59,7 +61,8 @@ export const configuration: Configuration = {
         { name: "EOS_Amsterdam", url: "https://telos.eu.eosamsterdam.net" },
       ],
       chain_id: "4667b205c6838ef70ff7988f6e8257e8be0e1284a2f59699054a018f743b1d11",
-      contracts: contracts
+      contracts: contracts,
+      explorer: "https://hyperion.telos.animus.is"
     },
     evm: {
       apis: [
@@ -71,6 +74,7 @@ export const configuration: Configuration = {
         { name: "TokenBridge", contract: "0x7847f0f64c93AB9423f5744ee73CcE212be3d139" },
         { name: "TokenContract", contract: "0x00B2656e963242BbA1B6Ba618c72c86eb839a1C9" }
       ],
+      explorer: "https://teloscan.io"
     },
   },
   testnet: {
@@ -81,7 +85,8 @@ export const configuration: Configuration = {
         { name: "EOS_USA", url: "https://test.telos.eosusa.io" },
       ],
       chain_id: "1eaa0824707c8c16bd25145493bf062aecddfeb56c736f6ba6397f3195f33c9f",
-      contracts: contracts
+      contracts: contracts,
+      explorer: "https://test.telos.eosusa.io"
     },
     evm: {
       apis: [
@@ -93,6 +98,7 @@ export const configuration: Configuration = {
         { name: "TokenBridge", contract: "0x7847f0f64c93AB9423f5744ee73CcE212be3d139" },
         { name: "TokenContract", contract: "0x00B2656e963242BbA1B6Ba618c72c86eb839a1C9" }
       ],
+      explorer: "https://testnet.teloscan.io"
     },
   },
   other: {

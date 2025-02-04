@@ -8,6 +8,7 @@ export interface BridgeTransactionEvent {
   fromTokenContract: string;
   fromTokenSymbol: string;
   reason: string;
+  transactionHash: string;
 }
 
 export interface ValidationStatusEvent {
@@ -19,6 +20,7 @@ export interface ValidationStatusEvent {
   fromTokenContract: string;
   fromTokenSymbol: string;
   timestamp: string;
+  transactionHash: string;
 }
 
 export interface RequestStatusCallbackEvent {
@@ -31,6 +33,7 @@ export interface RequestStatusCallbackEvent {
   status: RequestStatus;
   timestamp: string;
   reason: string;
+  transactionHash: string;
 }
 
 export interface RefundStatusEvent {
@@ -43,6 +46,7 @@ export interface RefundStatusEvent {
   status: RequestStatus;
   timestamp: string;
   reason: string;
+  transactionHash: string;
 }
 
 export interface RequestRetryStatusEvent {
@@ -56,6 +60,7 @@ export interface RequestRetryStatusEvent {
   status: RequestStatus;
   timestamp: string;
   reason: string;
+  transactionHash: string;
 }
 
 export interface RefundRetryStatusEvent {
@@ -69,6 +74,7 @@ export interface RefundRetryStatusEvent {
   status: RequestStatus;
   timestamp: string;
   reason: string;
+  transactionHash: string;
 }
 
 export interface BridgeRequestEvent {
@@ -83,6 +89,7 @@ export interface BridgeRequestEvent {
   memo: string;
   status: string;
   reason: string;
+  transactionHash: string;
 }
 
 export enum RequestStatus {

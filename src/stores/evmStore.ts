@@ -169,6 +169,7 @@ export const useEvmStore = defineStore('evmStore', () => {
           fromTokenContract: args.from_token_contract,
           fromTokenSymbol: args.from_token_symbol,
           reason: args.reason,
+          transactionHash: event.transactionHash,
         }
       })
     } catch (error) {
@@ -203,6 +204,7 @@ export const useEvmStore = defineStore('evmStore', () => {
           fromTokenContract: args.from_token_contract,
           fromTokenSymbol: args.from_token_symbol,
           timestamp: new Date(Number(args.timestamp) * 1000).toLocaleString(),
+          transactionHash: event.transactionHash,
         }
       })
     } catch (error) {
@@ -238,6 +240,7 @@ export const useEvmStore = defineStore('evmStore', () => {
           status: args.status,
           timestamp: new Date(Number(args.timestamp) * 1000).toLocaleString(),
           reason: args.reason,
+          transactionHash: event.transactionHash,
         }
       })
     } catch (error) {
@@ -274,6 +277,7 @@ export const useEvmStore = defineStore('evmStore', () => {
           status: args.status,
           timestamp: new Date(Number(args.timestamp) * 1000).toLocaleString(),
           reason: args.reason,
+          transactionHash: event.transactionHash,
         }
       })
     } catch (error) {
@@ -309,6 +313,7 @@ export const useEvmStore = defineStore('evmStore', () => {
           status: args.status,
           timestamp: new Date(Number(args.timestamp) * 1000).toLocaleString(),
           reason: args.reason,
+          transactionHash: event.transactionHash,
         }
       })
     } catch (error) {
@@ -345,6 +350,7 @@ export const useEvmStore = defineStore('evmStore', () => {
           status: args.status,
           timestamp: new Date(Number(args.timestamp) * 1000).toLocaleString(),
           reason: args.reason,
+          transactionHash: event.transactionHash,
         }
       })
     } catch (error) {
@@ -382,6 +388,7 @@ export const useEvmStore = defineStore('evmStore', () => {
           memo: args.memo,
           status: args.status,
           reason: args.reason,
+          transactionHash: event.transactionHash,
         }
       })
     } catch (error) {

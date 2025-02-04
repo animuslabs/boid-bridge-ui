@@ -44,6 +44,15 @@
             <div v-for="(value, key) in props.row.details" :key="key">
               <strong>{{ key }}:</strong> {{ value }}
             </div>
+            <div>
+              <strong>Transaction Hash:</strong>
+              <a :href="`${explorer}/tx/${props.row.transactionHash}`" target="_blank" rel="noopener noreferrer">
+                {{ props.row.transactionHash }}
+              </a>
+            </div>
+            <div>
+              <strong>Reason:</strong> {{ props.row.reason }}
+            </div>
           </q-td>
         </q-tr>
       </template>
@@ -54,7 +63,9 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
 import { Event } from 'src/lib/types/evmEvents'
+import { configuration } from 'src/lib/config'
 
+const explorer = configuration.testnet.evm.explorer
 const props = defineProps<{
   events: Event[]
 }>()
@@ -105,7 +116,7 @@ const formattedEvents = computed(() => {
       showDetails: false,
       details: {
         ...commonDetails,
-        ...specificDetails,
+        ...specificDetails
       },
       timestamp: formattedTimestamp
     }
