@@ -10,7 +10,7 @@
     </q-card-section>
     <q-card-section>
       <q-btn
-        icon="img:src/assets/MetaMask.webp"
+        icon="img:./MetaMask.webp"
         :label="isEvmLoggedIn ? `Logout (${loggedEvmAccount})` : 'Login to Telos EVM'"
         color="secondary"
         text-color="white"

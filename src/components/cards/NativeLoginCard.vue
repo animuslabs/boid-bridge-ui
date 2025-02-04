@@ -10,7 +10,7 @@
     </q-card-section>
     <q-card-section>
       <q-btn
-        icon="img:src/assets/AnchorWallet.png"
+        icon="img:./AnchorWallet.png"
         :label="isLoggedIn ? `Logout ${loggedAccount || ''}` : 'Login to Telos Native'"
         color="secondary"
         text-color="white"
