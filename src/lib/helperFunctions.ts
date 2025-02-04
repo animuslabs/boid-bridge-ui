@@ -1,3 +1,5 @@
+import { BigNumberish } from "ethers";
+
 // Function to check if an API URL is working by hitting /v1/chain/get_info
 async function isUrlWorking(url: string): Promise<boolean> {
   try {
@@ -32,4 +34,15 @@ export async function getWorkingUrl(urls: string[]): Promise<string> {
 // Helper function to clean up the address by removing "0x" if present
 export const cleanAddress = (address: string): string => {
   return address.startsWith("0x") ? address.slice(2) : address;
+};
+
+
+// change BigNumber to string
+export const bigNumberishToString = (bigNumberish: BigNumberish): string => {
+  return bigNumberish.toString();
+};
+
+// change BigNumberish to BigInt
+export const bigNumberishToBigInt = (bigNumberish: BigNumberish): bigint => {
+  return BigInt(bigNumberish);
 };

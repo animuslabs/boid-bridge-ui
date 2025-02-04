@@ -26,13 +26,13 @@
         :accountBalance="accountBalance"
         :onNativeLogin="handleNativeLogin"
       />
-      <TelosEvmCard :canCoverFee="canCoverFee" />
+      <TelosToEvmCard :canCoverFee="canCoverFee" />
     </div>
 
     <!-- Cards for Scenario 2: Telos EVM -> Telos Native -->
     <div v-else>
       <EvmLoginCard/>
-      <TelosNativeCard/>
+      <TelosToNativeCard/>
     </div>
   </q-page>
 </template>
@@ -42,8 +42,8 @@ import { ref, watch, onMounted, computed } from "vue";
 
 import { useSessionStore } from "src/stores/sessionStore";
 import { loadAccount } from "src/lib/antelope";
-import TelosNativeCard from "src/components/cards/TelosNativeCard.vue";
-import TelosEvmCard from "src/components/cards/TelosEvmCard.vue";
+import TelosToNativeCard from "src/components/cards/TelosToNativeCard.vue";
+import TelosToEvmCard from "src/components/cards/TelosToEvmCard.vue";
 import NativeLoginCard from "src/components/cards/NativeLoginCard.vue";
 import EvmLoginCard from "src/components/cards/EvmLoginCard.vue";
 

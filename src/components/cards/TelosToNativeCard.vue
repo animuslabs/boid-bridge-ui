@@ -16,6 +16,7 @@
         type="text"
         label="Destination Address"
         filled
+        style="background-color: var(--secondary); inline-size: 340px;"
         :readonly="showBoidId"
         :style="computedInputStyle"
         label-color="white"
@@ -58,6 +59,41 @@
         class="q-mt-md"
       />
     </q-card-section>
+    <q-separator style="size: 5px; color: white;"/>
+    <q-card-section>
+      <div class="q-mt-sm col-auto self-center">
+        <div class="row items-center">
+          <q-input
+            v-model.number="boidTokenAmountEvm"
+            type="number"
+            label="token amount"
+            filled
+            style="background-color: var(--secondary); inline-size: 200px;"
+            label-color="white"
+            color="white"
+            :input-style="{ color: 'white' }"
+            dense
+            clearable
+            @blur="validateInteger"
+          />
+          <div style="margin-left: 10px; align-self: center; font-size: 1.2rem;">BOID</div>
+        </div>
+      <div class="text-accent q-mt-sm">
+        <q-btn
+        flat
+        v-if="loggedAccount"
+        :label="loggedAccount + ' balance: ' + (Number(accountEvmBOIDBalance) / 1e18).toFixed(0)"
+        @click="copyBoidBalance"
+        aria-label="Copy balance to input"
+        style="text-transform: lowercase; font-weight: bolder;"
+      >
+        <q-tooltip>
+          {{ loggedAccountFull }}
+        </q-tooltip>
+      </q-btn>
+      </div>
+    </div>
+    </q-card-section>
   </q-card>
   <q-btn
     label="Transfer to Telos Native"
@@ -74,9 +110,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, watchEffect } from "vue";
 import { loadAccount, fetchDataFromBoidTable } from "src/lib/antelope"; // Adjust import path
+import { useEvmStore } from 'src/stores/evmStore'
+import { parseEther } from 'ethers';
 
+const evmStore = useEvmStore()
 
 // ---- Local States ----
 const localError = ref<string|null>(null);
@@ -84,8 +123,33 @@ const isValid = ref(false);
 const destinationAddress = ref("");
 const boidId = ref("");
 const showBoidId = ref(false); // Local toggle state for Boid ID
-// A simple pattern for Telos account names: 1–12 chars [a-z 1-5.] or 13 chars
-const telosNamePattern = /^[a-z1-5.]{1,13}$/;
+const boidTokenAmountEvm = ref<number|null>(null);
+const loggedAccount = computed(() => evmStore.address ? `${evmStore.address.slice(0, 4)}...` : '')
+const loggedAccountFull = computed(() => evmStore.address)
+
+// A simple pattern for Telos account names: 1–12 chars [a-z 1-5.] or 12 chars
+const telosNamePattern = /^[a-z1-5.]{1,12}$/;
+
+const accountEvmBOIDBalance = ref('0')
+
+// Watch for changes in the connection status and fetch balance
+watchEffect(() => {
+  async function updateBoidBalance() {
+    if (evmStore.isConnected && evmStore.address) {
+      try {
+        const balance = await evmStore.getBOIDTokenBalance(evmStore.address);
+        accountEvmBOIDBalance.value = balance.toString();
+      } catch (error) {
+        console.error("Error fetching BOID balance:", error);
+        accountEvmBOIDBalance.value = '0';
+      }
+    } else {
+      accountEvmBOIDBalance.value = '0';
+    }
+  }
+  // Use void to explicitly ignore the promise
+  void updateBoidBalance();
+});
 
 // Watch for destinationAddress changes
 watch(destinationAddress, (newAddress) => {
@@ -122,7 +186,7 @@ function handleDestinationAddressChange(val: string | number | null) {
 
   // Basic pattern check
   if (!address || !telosNamePattern.test(address)) {
-    localError.value = "Invalid Telos account name (1–13 chars [a-z1-5.]).";
+    localError.value = "Invalid Telos account name (1–12 chars [a-z1-5.]).";
     isValid.value = false;
     return;
   }
@@ -150,6 +214,10 @@ async function validateAddressOnChain(address: string): Promise<void> {
     localError.value = "Error verifying account on-chain.";
     isValid.value = false;
   }
+}
+
+function copyBoidBalance() {
+  boidTokenAmountEvm.value = Math.floor(Number(accountEvmBOIDBalance.value) / 1e18);
 }
 
 // ---------- Boid ID Handler ----------
@@ -217,12 +285,62 @@ const getInputDarkStyle = () => ({
 const computedInputStyle = computed(() => {
   return showBoidId.value ? getInputDarkStyle() : getInputStyle();
 });
-function handleToNativeTransfer() {
+function validateInteger() {
+  if (boidTokenAmountEvm.value !== null && !Number.isInteger(boidTokenAmountEvm.value)) {
+    boidTokenAmountEvm.value = Math.floor(boidTokenAmountEvm.value);
+  }
+}
+async function handleToNativeTransfer() {
+  if (!boidTokenAmountEvm.value) {
+    console.error("No token amount provided");
+    return;
+  }
+  const amount = parseEther(boidTokenAmountEvm.value.toString());
   console.log("handleToNativeTransfer");
+  console.log("boidTokenAmountEvm", boidTokenAmountEvm.value);
+  console.log("amount", amount);
 
   // Add this to log both address and boid ID:
   console.log("Destination Address:", destinationAddress.value);
   console.log("Boid ID:", boidId.value || "N/A");
+
+  // Read the current allowance
+  let currentAllowance = await evmStore.getTokenAllowance(loggedAccountFull.value as `0x${string}`);
+  console.log("currentAllowance", currentAllowance);
+
+  // Compare allowance < desired amount
+  if (currentAllowance < amount) {
+    console.log(
+      `Current allowance = ${currentAllowance.toString()}. ` +
+      `Needs approval for at least ${amount.toString()}...`
+    );
+
+    // Approve the token
+    const approveTx = await evmStore.userApprovedToken(amount);
+    if (!approveTx) {
+      console.error("approveTx transaction not returned");
+      return;
+    }
+
+    // Optionally re-check allowance (if you like) to confirm it updated
+    currentAllowance = await evmStore.getTokenAllowance(evmStore.address as `0x${string}`);
+    console.log(`New allowance: ${currentAllowance.toString()}`);
+  } else {
+    console.log(
+      `Sufficient allowance: ${currentAllowance.toString()} (needed: ${amount.toString()})`
+    );
+  }
+
+  // Now do the bridging transaction
+  const bridgeTx = await evmStore.bridgeToken(
+    amount,
+    destinationAddress.value,
+    boidId.value || "Bridge to Telos Native"
+  );
+  if (!bridgeTx) {
+    console.error("bridgeTx transaction not returned");
+    return;
+  }
 }
 
 </script>

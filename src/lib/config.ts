@@ -68,8 +68,8 @@ export const configuration: Configuration = {
       chain_id: "40",
       chainIdHEX: '0x28', // 40 in hex
       contracts: [
-        { name: "TokenBridge", contract: "0xxxxx" },
-        { name: "TokenContract", contract: "0xxx" }
+        { name: "TokenBridge", contract: "0x7847f0f64c93AB9423f5744ee73CcE212be3d139" },
+        { name: "TokenContract", contract: "0x00B2656e963242BbA1B6Ba618c72c86eb839a1C9" }
       ],
     },
   },
@@ -90,8 +90,8 @@ export const configuration: Configuration = {
       chain_id: "41",
       chainIdHEX: '0x29', // 41 in hex
       contracts: [
-        { name: "TokenBridge", contract: "0xxxxx" },
-        { name: "TokenContract", contract: "0xxx" }
+        { name: "TokenBridge", contract: "0x7847f0f64c93AB9423f5744ee73CcE212be3d139" },
+        { name: "TokenContract", contract: "0x00B2656e963242BbA1B6Ba618c72c86eb839a1C9" }
       ],
     },
   },
