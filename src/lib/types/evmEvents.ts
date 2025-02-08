@@ -36,47 +36,6 @@ export interface RequestStatusCallbackEvent {
   transactionHash: string;
 }
 
-export interface RefundStatusEvent {
-  id: number;
-  sender: string;
-  antelopeTokenContract: string;
-  antelopeSymbol: string;
-  amount: string;
-  receiver: string;
-  status: RequestStatus;
-  timestamp: string;
-  reason: string;
-  transactionHash: string;
-}
-
-export interface RequestRetryStatusEvent {
-  id: number;
-  sender: string;
-  antelopeTokenContract: string;
-  antelopeSymbol: string;
-  amount: string;
-  receiver: string;
-  attemptCount: number;
-  status: RequestStatus;
-  timestamp: string;
-  reason: string;
-  transactionHash: string;
-}
-
-export interface RefundRetryStatusEvent {
-  id: number;
-  sender: string;
-  antelopeTokenContract: string;
-  antelopeSymbol: string;
-  amount: string;
-  receiver: string;
-  attemptCount: number;
-  status: RequestStatus;
-  timestamp: string;
-  reason: string;
-  transactionHash: string;
-}
-
 export interface BridgeRequestEvent {
   id: number;
   sender: string;
@@ -95,14 +54,29 @@ export interface BridgeRequestEvent {
 export enum RequestStatus {
   Pending = "Pending",
   Completed = "Completed",
-  Failed = "Failed"
+  Failed = "Failed",
+  Refunded = "Refunded"
+}
+
+export interface RequestRemovalSuccessEvent {
+  id: number;
+  sender: string;
+  timestamp: string;
+  message: string;
+  transactionHash: string;
+}
+
+export interface FailedRequestClearedEvent {
+  id: number;
+  sender: string;
+  timestamp: string;
+  transactionHash: string;
 }
 
 export type Event =
   | (BridgeTransactionEvent & { eventType: 'BridgeTransaction' })
   | (ValidationStatusEvent & { eventType: 'ValidationStatus' })
   | (RequestStatusCallbackEvent & { eventType: 'RequestStatusCallback' })
-  | (RefundStatusEvent & { eventType: 'RefundStatus' })
-  | (RequestRetryStatusEvent & { eventType: 'RequestRetryStatus' })
-  | (RefundRetryStatusEvent & { eventType: 'RefundRetryStatus' })
-  | (BridgeRequestEvent & { eventType: 'BridgeRequest' });
+  | (BridgeRequestEvent & { eventType: 'BridgeRequest' })
+  | (RequestRemovalSuccessEvent & { eventType: 'RequestRemovalSuccess' })
+  | (FailedRequestClearedEvent & { eventType: 'FailedRequestCleared' });

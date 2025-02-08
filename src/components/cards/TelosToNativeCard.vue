@@ -335,7 +335,7 @@ async function handleToNativeTransfer() {
   const bridgeTx = await evmStore.bridgeToken(
     amount,
     destinationAddress.value,
-    boidId.value || "Bridge to Telos Native"
+    boidId.value ? `deposit boid_id=${boidId.value}` : "Bridge Transfer"
   );
   if (!bridgeTx) {
     console.error("bridgeTx transaction not returned");
