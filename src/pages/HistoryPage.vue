@@ -1,55 +1,61 @@
 <template>
   <q-page class="column items-center justify-start q-pt-lg">
-    <!-- Date Filter -->
-    <div class="q-pa-md" style="width: 300px;">
-      <div class="custom-qselect">
-        <q-select
-          v-model="selectedDays"
-          :options="dateOptions"
-          option-label="label"
-          option-value="value"
-          emit-value
-          map-options
-          options-dense
-          filled
-          label="Filter by Date"
-          hint="Select a time range"
-          dropdown-icon="expand_less"
-          popup-content-class="custom-select-popup"
-          dense
-        />
-      </div>
-    </div>
-
-    <q-table
-      :rows="formattedRows"
-      :columns="columns"
-      :key="tableKey"
-      sort-by="id"
-      dark
-      flat
-      bordered
+    <q-tabs
+      v-model="activeTab"
       dense
-      class="q-mb-md"
-      style="background-color: var(--q-dark); color: white;"
+      class="text-white"
+      active-color="primary"
+      indicator-color="primary"
     >
-      <template v-slot:body-cell-sender="props">
-        <q-td :props="props">
-          {{ truncate(props.value) }}
-          <q-tooltip>{{ props.value }}</q-tooltip>
-        </q-td>
-      </template>
-      <template v-slot:body-cell-memo="props">
-        <q-td :props="props">
-          {{ truncate(props.value) }}
-          <q-tooltip>{{ props.value }}</q-tooltip>
-        </q-td>
-      </template>
-      <template v-slot:body-cell-actions="props">
-        <q-btn flat color="negative" icon="delete" size="sm" @click="deleteRequest(props.row.id!)" />
-      </template>
-    </q-table>
-    <ComprehensiveEventTable :events="filteredEvents" />
+      <q-tab name="requests" label="Basic" />
+      <q-tab name="events" label="Detailed" />
+    </q-tabs>
+
+    <q-tab-panels v-model="activeTab" animated class="full-width transparent-tabs">
+      <q-tab-panel name="requests" class="flex flex-center">
+        <div class="q-table-container">
+          <q-table
+            :rows="formattedRows"
+            :columns="columns"
+            :key="tableKey"
+            sort-by="id"
+            dark
+            flat
+            bordered
+            dense
+            class="q-mb-md"
+            style="background-color: var(--q-dark); color: white; width: 100%;"
+          >
+            <template v-slot:body-cell-sender="props">
+              <q-td :props="props">
+                {{ truncate(props.value) }}
+                <q-tooltip>{{ props.value }}</q-tooltip>
+              </q-td>
+            </template>
+            <template v-slot:body-cell-memo="props">
+              <q-td :props="props">
+                {{ truncate(props.value) }}
+                <q-tooltip>{{ props.value }}</q-tooltip>
+              </q-td>
+            </template>
+            <template v-slot:body-cell-actions="props">
+              <q-btn flat color="negative" icon="delete" size="sm" @click="deleteRequest(props.row.id!)">
+                <q-tooltip>Refund Request {{ props.row.id }}</q-tooltip>
+              </q-btn>
+              <q-btn flat color="green" icon="thumb_up_alt" size="sm">
+                <q-tooltip>Approve Request {{ props.row.id }} on Telos Native</q-tooltip>
+              </q-btn>
+            </template>
+          </q-table>
+        </div>
+      </q-tab-panel>
+
+      <q-tab-panel name="events" class="flex flex-center">
+        <DetailedEventTable :events="allEvents"/>
+
+        <DetailedNativeTable />
+      </q-tab-panel>
+    </q-tab-panels>
   </q-page>
 </template>
 
@@ -57,7 +63,8 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useEvmStore, BridgeRequest } from 'src/stores/evmStore'
 import { QTableProps } from 'quasar'
-import ComprehensiveEventTable from 'src/components/ComprehensiveEventTable.vue'
+import DetailedEventTable from 'src/components/DetailedEventTable.vue'
+import DetailedNativeTable from 'src/components/DetailedNativeTable.vue'
 import { Event } from 'src/lib/types/evmEvents'
 
 const evmStore = useEvmStore()
@@ -87,7 +94,7 @@ const allEvents = ref<Event[]>([])
 
 // Fetch all events on component mount
 onMounted(async () => {
-  await evmStore.initializeBlockNumberFor30DaysAgo()
+  await evmStore.initBlockNumber7DaysAgo()
   try {
     activeRequests.value = await evmStore.queryActiveRequests()
     console.log('Active Requests:', activeRequests.value)
@@ -109,29 +116,6 @@ onMounted(async () => {
   } catch (error) {
     console.error('Failed to fetch events:', error)
   }
-})
-
-// Date filter options in days
-const dateOptions = [
-  { label: 'Last 24 Hours', value: 1 },
-  { label: 'Last 3 Days', value: 3 },
-  { label: 'Last 7 Days', value: 7 },
-  { label: 'Last 30 Days', value: 30 }
-]
-
-// Reactive state for the selected filter value (in days)
-const selectedDays = ref<number>(1)
-
-// Computed property to filter events based on the selected date range
-const filteredEvents = computed(() => {
-  const now = new Date()
-  const cutoffDate = new Date(now)
-  cutoffDate.setDate(now.getDate() - selectedDays.value)
-
-  return allEvents.value.filter(event => {
-    const eventDate = new Date(event.timestamp)
-    return eventDate >= cutoffDate
-  })
 })
 
 // Add computed property for formatted dates
@@ -164,6 +148,8 @@ function truncate(text: string): string {
   return text.length > 13 ? text.slice(0, 10) + '...' : text
 }
 
+// Add this near other reactive declarations
+const activeTab = ref<'requests' | 'events'>('requests')
 </script>
 
 <style>
@@ -203,5 +189,29 @@ function truncate(text: string): string {
 }
 .custom-qselect .q-field__messages div {
   color: white !important;
+}
+
+.transparent-tabs .q-panel {
+  background-color: transparent !important;
+}
+
+.transparent-tabs .q-tab-panel {
+  background-color: transparent !important;
+  padding: 0;
+}
+
+.q-table-container {
+  max-width: 650px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.q-tab-panels {
+  background-color: transparent !important;
+}
+
+.q-tab-panel {
+  background-color: transparent !important;
+  padding: 0;
 }
 </style>

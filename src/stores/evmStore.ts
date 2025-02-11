@@ -5,7 +5,11 @@ import { abi as bridgeContractAbi } from 'src/lib/TelosEVMContracts/TokenBridge.
 import { abi as tokenAbi } from 'src/lib/TelosEVMContracts/TokenContract.json'
 import { BigNumberish, parseEther } from 'ethers'
 import { ethers } from 'ethers'
-import { bigNumberishToBigInt, bigNumberishToString, customBytes32ToString } from 'src/lib/helperFunctions'
+import {
+  bigNumberishToBigInt,
+  bigNumberishToString,
+  customBytes32ToString,
+} from 'src/lib/helperFunctions'
 import { ref } from 'vue'
 import {
   BridgeTransactionEvent,
@@ -40,16 +44,16 @@ export const useEvmStore = defineStore('evmStore', () => {
   const ethersProvider = new ethers.JsonRpcProvider(ethersUrl) // Replace with your RPC URL
 
   // Variable to store the block number for 30 days ago
-  let blockNumberFor30DaysAgo: number | null = null
+  let blockNumberFor7DaysAgo: number | null = null
 
   // Function to calculate and store the block number for 30 days ago
-  async function initializeBlockNumberFor30DaysAgo() {
+  async function initBlockNumber7DaysAgo() {
     const currentBlockNumber = await ethersProvider.getBlockNumber()
-    const averageBlockTimeInSeconds = 13 // Adjust this based on the network's average block time
+    const averageBlockTimeInSeconds = 0.5
     const secondsInADay = 86400
     const blocksPerDay = secondsInADay / averageBlockTimeInSeconds
-    const blocksAgo = Math.floor(30 * blocksPerDay)
-    blockNumberFor30DaysAgo = currentBlockNumber - blocksAgo
+    const blocksAgo = Math.floor(7 * blocksPerDay)
+    blockNumberFor7DaysAgo = currentBlockNumber - blocksAgo
   }
 
   async function getTokenAllowance(owner: `0x${string}`): Promise<bigint> {
@@ -104,7 +108,9 @@ export const useEvmStore = defineStore('evmStore', () => {
   }
 
   // Modified removeRequest function to return an object with trx result
-  async function removeRequest(id: number): Promise<{ success: boolean; hash?: string; error?: string }> {
+  async function removeRequest(
+    id: number,
+  ): Promise<{ success: boolean; hash?: string; error?: string }> {
     if (!bridgeContractAddress?.startsWith('0x'))
       return { success: false, error: 'Invalid contract address' }
     try {
@@ -141,20 +147,20 @@ export const useEvmStore = defineStore('evmStore', () => {
   }
 
   async function queryActiveRequests(): Promise<BridgeRequest[]> {
-    if (!bridgeContractAddress?.startsWith('0x')) return Promise.resolve([]);
+    if (!bridgeContractAddress?.startsWith('0x')) return Promise.resolve([])
 
     // Get array length from slot 10
-    const lengthHex = await ethersProvider.getStorage(bridgeContractAddress, 10);
-    const length = Number(BigInt(lengthHex));
+    const lengthHex = await ethersProvider.getStorage(bridgeContractAddress, 10)
+    const length = Number(BigInt(lengthHex))
 
     // Get all elements from the array
-    const activeIds: bigint[] = [];
-    const arrayBaseSlot = ethers.keccak256(new ethers.AbiCoder().encode(["uint256"], [10]));
+    const activeIds: bigint[] = []
+    const arrayBaseSlot = ethers.keccak256(new ethers.AbiCoder().encode(['uint256'], [10]))
 
     for (let i = 0; i < length; i++) {
-      const slot = BigInt(arrayBaseSlot) + BigInt(i);
-      const idHex = await ethersProvider.getStorage(bridgeContractAddress, "0x" + slot.toString(16));
-      activeIds.push(BigInt(idHex));
+      const slot = BigInt(arrayBaseSlot) + BigInt(i)
+      const idHex = await ethersProvider.getStorage(bridgeContractAddress, '0x' + slot.toString(16))
+      activeIds.push(BigInt(idHex))
     }
 
     // Fetch all requests in parallel
@@ -162,28 +168,53 @@ export const useEvmStore = defineStore('evmStore', () => {
       activeIds.map(async (requestId) => {
         try {
           const baseSlot = ethers.keccak256(
-            new ethers.AbiCoder().encode(["uint256", "uint256"], [requestId, 9])
-          );
+            new ethers.AbiCoder().encode(['uint256', 'uint256'], [requestId, 9]),
+          )
 
           // Read all required slots
-          const [sender, amount, requestedAt, tokenContract, symbol, receiver, packedData, memo] = await Promise.all([
-            ethersProvider.getStorage(bridgeContractAddress, "0x" + (BigInt(baseSlot) + 1n).toString(16)),
-            ethersProvider.getStorage(bridgeContractAddress, "0x" + (BigInt(baseSlot) + 2n).toString(16)),
-            ethersProvider.getStorage(bridgeContractAddress, "0x" + (BigInt(baseSlot) + 3n).toString(16)),
-            ethersProvider.getStorage(bridgeContractAddress, "0x" + (BigInt(baseSlot) + 4n).toString(16)),
-            ethersProvider.getStorage(bridgeContractAddress, "0x" + (BigInt(baseSlot) + 5n).toString(16)),
-            ethersProvider.getStorage(bridgeContractAddress, "0x" + (BigInt(baseSlot) + 6n).toString(16)),
-            ethersProvider.getStorage(bridgeContractAddress, "0x" + (BigInt(baseSlot) + 7n).toString(16)),
-            ethersProvider.getStorage(bridgeContractAddress, "0x" + (BigInt(baseSlot) + 8n).toString(16)),
-          ]);
+          const [sender, amount, requestedAt, tokenContract, symbol, receiver, packedData, memo] =
+            await Promise.all([
+              ethersProvider.getStorage(
+                bridgeContractAddress,
+                '0x' + (BigInt(baseSlot) + 1n).toString(16),
+              ),
+              ethersProvider.getStorage(
+                bridgeContractAddress,
+                '0x' + (BigInt(baseSlot) + 2n).toString(16),
+              ),
+              ethersProvider.getStorage(
+                bridgeContractAddress,
+                '0x' + (BigInt(baseSlot) + 3n).toString(16),
+              ),
+              ethersProvider.getStorage(
+                bridgeContractAddress,
+                '0x' + (BigInt(baseSlot) + 4n).toString(16),
+              ),
+              ethersProvider.getStorage(
+                bridgeContractAddress,
+                '0x' + (BigInt(baseSlot) + 5n).toString(16),
+              ),
+              ethersProvider.getStorage(
+                bridgeContractAddress,
+                '0x' + (BigInt(baseSlot) + 6n).toString(16),
+              ),
+              ethersProvider.getStorage(
+                bridgeContractAddress,
+                '0x' + (BigInt(baseSlot) + 7n).toString(16),
+              ),
+              ethersProvider.getStorage(
+                bridgeContractAddress,
+                '0x' + (BigInt(baseSlot) + 8n).toString(16),
+              ),
+            ])
 
-          const packedValue = BigInt(packedData);
-          const evmDecimals = Number(packedValue & 0xFFn);
-          const status = String((packedValue >> 8n) & 0xFFn);
+          const packedValue = BigInt(packedData)
+          const evmDecimals = Number(packedValue & 0xffn)
+          const status = String((packedValue >> 8n) & 0xffn)
 
           return {
             id: Number(requestId),
-            sender: "0x" + sender.slice(-40), // Extract address from bytes32
+            sender: '0x' + sender.slice(-40), // Extract address from bytes32
             amount: Number(ethers.formatUnits(BigInt(amount), evmDecimals)).toFixed(0),
             requested_at: new Date(Number(BigInt(requestedAt)) * 1000),
             antelope_token_contract: customBytes32ToString(tokenContract),
@@ -191,16 +222,16 @@ export const useEvmStore = defineStore('evmStore', () => {
             receiver: customBytes32ToString(receiver),
             evm_decimals: evmDecimals,
             status: status,
-            memo: customBytes32ToString(memo)
-          };
+            memo: customBytes32ToString(memo),
+          }
         } catch (error) {
-          console.error(`Error processing request ${requestId}:`, error);
-          return null;
+          console.error(`Error processing request ${requestId}:`, error)
+          return null
         }
-      })
-    );
+      }),
+    )
 
-    return requests.filter((req) => req !== null) as BridgeRequest[];
+    return requests.filter((req) => req !== null) as BridgeRequest[]
   }
 
   async function getBOIDTokenBalance(account: `0x${string}`): Promise<bigint> {
@@ -240,9 +271,9 @@ export const useEvmStore = defineStore('evmStore', () => {
   // Function to fetch BridgeTransaction events from the last 30 days
   async function fetchBridgeTransactionEvents() {
     const events = ref<BridgeTransactionEvent[]>([])
-    if (blockNumberFor30DaysAgo === null) {
-      console.error('Block number for 30 days ago is not initialized')
-      return events;
+    if (blockNumberFor7DaysAgo === null) {
+      console.error('Block number for 7 days ago is not initialized')
+      return events
     }
     try {
       const bridgeContract = new ethers.Contract(
@@ -250,7 +281,11 @@ export const useEvmStore = defineStore('evmStore', () => {
         bridgeContractAbi,
         ethersProvider,
       )
-      const eventLogs = await bridgeContract.queryFilter('BridgeTransaction', blockNumberFor30DaysAgo, 'latest')
+      const eventLogs = await bridgeContract.queryFilter(
+        'BridgeTransaction',
+        blockNumberFor7DaysAgo,
+        'latest',
+      )
       console.log('BridgeTransaction events', eventLogs)
       events.value = eventLogs.map((event) => {
         const args = (event as ethers.EventLog).args
@@ -258,9 +293,9 @@ export const useEvmStore = defineStore('evmStore', () => {
           id: Number(args.id),
           receiver: args.receiver,
           token: args.token,
-          amount: ethers.formatEther(args.amount),
+          amount: Number(ethers.formatEther(args.amount)).toString(),
           status: args.status,
-          timestamp: new Date(Number(args.timestamp) * 1000).toLocaleString(),
+          timestamp: new Date(Number(args.timestamp) * 1000).toISOString(),
           sender: args.sender,
           fromTokenContract: args.from_token_contract,
           fromTokenSymbol: args.from_token_symbol,
@@ -271,74 +306,90 @@ export const useEvmStore = defineStore('evmStore', () => {
     } catch (error) {
       console.error('Error fetching BridgeTransaction events:', error)
     }
-    return events;
+    return events
   }
 
   // Function to fetch ValidationStatus events
   async function fetchValidationStatusEvents() {
     const events = ref<ValidationStatusEvent[]>([])
-    if (blockNumberFor30DaysAgo === null) {
-      console.error('Block number for 30 days ago is not initialized');
-      return events;
+    if (blockNumberFor7DaysAgo === null) {
+      console.error('Block number for 7 days ago is not initialized')
+      return events
     }
     try {
-      const bridgeContract = new ethers.Contract(bridgeContractAddress, bridgeContractAbi, ethersProvider);
-      const eventLogs = await bridgeContract.queryFilter('ValidationStatus', blockNumberFor30DaysAgo, 'latest');
+      const bridgeContract = new ethers.Contract(
+        bridgeContractAddress,
+        bridgeContractAbi,
+        ethersProvider,
+      )
+      const eventLogs = await bridgeContract.queryFilter(
+        'ValidationStatus',
+        blockNumberFor7DaysAgo,
+        'latest',
+      )
       events.value = eventLogs.map((event) => {
-         const args = (event as ethers.EventLog).args;
-         return {
-           message: args.message,
-           token: args.token,
-           receiver: args.receiver,
-           amount: ethers.formatEther(args.amount),
-           sender: args.sender,
-           fromTokenContract: args.from_token_contract,
-           fromTokenSymbol: args.from_token_symbol,
-           timestamp: new Date(Number(args.timestamp) * 1000).toLocaleString(),
-           transactionHash: event.transactionHash,
-         };
-      });
+        const args = (event as ethers.EventLog).args
+        return {
+          message: args.message,
+          token: args.token,
+          receiver: args.receiver,
+          amount: Number(ethers.formatEther(args.amount)).toString(),
+          sender: args.sender,
+          fromTokenContract: args.from_token_contract,
+          fromTokenSymbol: args.from_token_symbol,
+          timestamp: new Date(Number(args.timestamp) * 1000).toISOString(),
+          transactionHash: event.transactionHash,
+        }
+      })
     } catch (error) {
-      console.error('Error fetching ValidationStatus events:', error);
+      console.error('Error fetching ValidationStatus events:', error)
     }
-    return events;
+    return events
   }
 
   // Function to fetch RequestStatus events
   async function fetchRequestStatusEvents() {
     const events = ref<RequestStatusCallbackEvent[]>([])
-    if (blockNumberFor30DaysAgo === null) {
-      console.error('Block number for 30 days ago is not initialized');
-      return events;
+    if (blockNumberFor7DaysAgo === null) {
+      console.error('Block number for 7 days ago is not initialized')
+      return events
     }
     try {
-      const bridgeContract = new ethers.Contract(bridgeContractAddress, bridgeContractAbi, ethersProvider);
-      const eventLogs = await bridgeContract.queryFilter('RequestStatusCallback', blockNumberFor30DaysAgo, 'latest');
+      const bridgeContract = new ethers.Contract(
+        bridgeContractAddress,
+        bridgeContractAbi,
+        ethersProvider,
+      )
+      const eventLogs = await bridgeContract.queryFilter(
+        'RequestStatusCallback',
+        blockNumberFor7DaysAgo,
+        'latest',
+      )
       events.value = eventLogs.map((event) => {
-         const args = (event as ethers.EventLog).args;
-         return {
-           id: Number(args.id),
-           sender: args.sender,
-           antelopeTokenContract: args.antelope_token_contract,
-           antelopeSymbol: args.antelope_symbol,
-           amount: ethers.formatEther(args.amount),
-           receiver: args.receiver,
-           status: args.status,
-           timestamp: new Date(Number(args.timestamp) * 1000).toLocaleString(),
-           reason: args.reason,
-           transactionHash: event.transactionHash,
-         };
-      });
+        const args = (event as ethers.EventLog).args
+        return {
+          id: Number(args.id),
+          sender: args.sender,
+          antelopeTokenContract: args.antelope_token_contract,
+          antelopeSymbol: args.antelope_symbol,
+          amount: Number(ethers.formatEther(args.amount)).toString(),
+          receiver: args.receiver,
+          status: args.status,
+          timestamp: new Date(Number(args.timestamp) * 1000).toISOString(),
+          reason: args.reason,
+          transactionHash: event.transactionHash,
+        }
+      })
     } catch (error) {
-      console.error('Error fetching RequestStatus events:', error);
+      console.error('Error fetching RequestStatus events:', error)
     }
-    return events;
+    return events
   }
 
   // Function to fetch BridgeRequest events
   async function fetchBridgeRequestEvents() {
-    if (blockNumberFor30DaysAgo === null) {
-      console.error('Block number for 30 days ago is not initialized')
+    if (blockNumberFor7DaysAgo === null) {
+      console.error('Block number for 7 days ago is not initialized')
       return ref<BridgeRequestEvent[]>([])
     }
     const events = ref<BridgeRequestEvent[]>([])
@@ -348,7 +399,11 @@ export const useEvmStore = defineStore('evmStore', () => {
         bridgeContractAbi,
         ethersProvider,
       )
-      const eventLogs = await bridgeContract.queryFilter('BridgeRequest', blockNumberFor30DaysAgo, 'latest')
+      const eventLogs = await bridgeContract.queryFilter(
+        'BridgeRequest',
+        blockNumberFor7DaysAgo,
+        'latest',
+      )
       console.log('BridgeRequest events', eventLogs)
       events.value = eventLogs.map((event) => {
         const args = (event as ethers.EventLog).args
@@ -358,9 +413,9 @@ export const useEvmStore = defineStore('evmStore', () => {
           token: args.token,
           antelopeTokenContract: args.antelope_token_contract,
           antelopeSymbol: args.antelope_symbol,
-          amount: ethers.formatEther(args.amount),
+          amount: Number(ethers.formatEther(args.amount)).toString(),
           receiver: args.receiver,
-          timestamp: new Date(Number(args.timestamp) * 1000).toLocaleString(),
+          timestamp: new Date(Number(args.timestamp) * 1000).toISOString(),
           memo: args.memo,
           status: args.status,
           reason: args.reason,
@@ -375,51 +430,67 @@ export const useEvmStore = defineStore('evmStore', () => {
 
   async function fetchRequestRemovalSuccessEvents() {
     const events = ref<RequestRemovalSuccessEvent[]>([])
-    if (blockNumberFor30DaysAgo === null) {
-      console.error('Block number for 30 days ago is not initialized');
-      return events;
+    if (blockNumberFor7DaysAgo === null) {
+      console.error('Block number for 7 days ago is not initialized')
+      return events
     }
     try {
-      const bridgeContract = new ethers.Contract(bridgeContractAddress, bridgeContractAbi, ethersProvider);
-      const eventLogs = await bridgeContract.queryFilter('RequestRemovalSuccess', blockNumberFor30DaysAgo, 'latest');
+      const bridgeContract = new ethers.Contract(
+        bridgeContractAddress,
+        bridgeContractAbi,
+        ethersProvider,
+      )
+      const eventLogs = await bridgeContract.queryFilter(
+        'RequestRemovalSuccess',
+        blockNumberFor7DaysAgo,
+        'latest',
+      )
       events.value = eventLogs.map((event) => {
-         const args = (event as ethers.EventLog).args;
-         return {
-           id: Number(args.id),
-           sender: args.sender,
-           timestamp: new Date(Number(args.timestamp) * 1000).toLocaleString(),
-           message: args.message,
-           transactionHash: event.transactionHash,
-         };
-      });
+        const args = (event as ethers.EventLog).args
+        return {
+          id: Number(args.id),
+          sender: args.sender,
+          timestamp: new Date(Number(args.timestamp) * 1000).toISOString(),
+          message: args.message,
+          transactionHash: event.transactionHash,
+        }
+      })
     } catch (error) {
-      console.error('Error fetching RequestRemovalSuccess events:', error);
+      console.error('Error fetching RequestRemovalSuccess events:', error)
     }
-    return events;
+    return events
   }
 
   async function fetchFailedRequestClearedEvents() {
     const events = ref<FailedRequestClearedEvent[]>([])
-    if (blockNumberFor30DaysAgo === null) {
-      console.error('Block number for 30 days ago is not initialized');
-      return events;
+    if (blockNumberFor7DaysAgo === null) {
+      console.error('Block number for 7 days ago is not initialized')
+      return events
     }
     try {
-      const bridgeContract = new ethers.Contract(bridgeContractAddress, bridgeContractAbi, ethersProvider);
-      const eventLogs = await bridgeContract.queryFilter('FailedRequestCleared', blockNumberFor30DaysAgo, 'latest');
+      const bridgeContract = new ethers.Contract(
+        bridgeContractAddress,
+        bridgeContractAbi,
+        ethersProvider,
+      )
+      const eventLogs = await bridgeContract.queryFilter(
+        'FailedRequestCleared',
+        blockNumberFor7DaysAgo,
+        'latest',
+      )
       events.value = eventLogs.map((event) => {
-         const args = (event as ethers.EventLog).args;
-         return {
-           id: Number(args.id),
-           sender: args.sender,
-           timestamp: new Date(Number(args.timestamp) * 1000).toLocaleString(),
-           transactionHash: event.transactionHash,
-         };
-      });
+        const args = (event as ethers.EventLog).args
+        return {
+          id: Number(args.id),
+          sender: args.sender,
+          timestamp: new Date(Number(args.timestamp) * 1000).toISOString(),
+          transactionHash: event.transactionHash,
+        }
+      })
     } catch (error) {
-      console.error('Error fetching FailedRequestCleared events:', error);
+      console.error('Error fetching FailedRequestCleared events:', error)
     }
-    return events;
+    return events
   }
 
   return {
@@ -439,7 +510,7 @@ export const useEvmStore = defineStore('evmStore', () => {
     fetchBridgeRequestEvents,
     fetchRequestRemovalSuccessEvents,
     fetchFailedRequestClearedEvents,
-    initializeBlockNumberFor30DaysAgo,
+    initBlockNumber7DaysAgo,
     removeRequest,
     queryActiveRequests,
   }

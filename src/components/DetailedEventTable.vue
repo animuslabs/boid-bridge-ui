@@ -1,18 +1,16 @@
 <template>
   <div>
-    <q-spinner v-if="loading" size="50px" color="primary" />
     <q-table
       dark
-      v-else
+      class="detailed-event-table"
       :rows="formattedRows"
       :columns="columns"
       row-key="id"
       :filter="filter"
+      :filter-method="filterEvents"
       flat
       bordered
       dense
-      class="q-mb-md"
-      style="background-color: var(--q-dark); color: white;"
       v-model:expanded="expanded"
       v-model:pagination="pagination"
     >
@@ -23,7 +21,7 @@
           debounce="300"
           color="primary"
           v-model="filter"
-          placeholder="Search in events"
+          placeholder="Search in EVM events"
         >
           <template v-slot:append>
             <q-icon name="search" />
@@ -57,10 +55,17 @@
               <strong>Token:</strong> {{ props.row.token }}
             </div>
             <div v-if="props.row.amount" class="detail-item">
-              <strong>Amount:</strong> {{ props.row.amount }}
+              <strong>Amount:</strong> {{ props.row.amount }} BOID
             </div>
             <div v-if="props.row.status" class="detail-item">
-              <strong>Status:</strong> {{ props.row.status }}
+              <strong>Status:</strong>
+              <q-chip
+                :color="props.row.status === '1' ? 'positive' : 'warning'"
+                text-color="white"
+                size="sm"
+              >
+                {{ props.row.status === '1' ? 'Completed' : 'Pending' }}
+              </q-chip>
             </div>
             <div v-if="props.row.fromTokenContract" class="detail-item">
               <strong>From Contract:</strong> {{ truncate(props.row.fromTokenContract) }}
@@ -99,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref } from 'vue'
 import { Event } from 'src/lib/types/evmEvents'
 import { configuration } from 'src/lib/config'
 
@@ -108,16 +113,14 @@ const props = defineProps<{
   events: Event[]
 }>()
 
-const loading = ref(true)
-
 const filter = ref('')
 
 const formattedRows = computed(() => {
   const sorted = [...props.events].sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
-  return sorted.map((event, index) => ({
-    id: index,
+  return sorted.map((event) => ({
+    id: `${event.eventType}-${event.transactionHash}-${event.timestamp}`,
     ...event
   }));
 });
@@ -127,12 +130,26 @@ const columns = [
     name: 'time',
     label: 'Time',
     field: 'timestamp',
-    format: (val: string) => new Date(val).toLocaleString('en-GB'),
-    sortable: true
+    format: (val: string) => {
+      const date = new Date(val)
+      return date.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short'
+      }) + '\n' +
+      date.toLocaleTimeString('en-GB', {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      })
+    },
+    sortable: true,
+    sort: (a: string, b: string) => new Date(b).getTime() - new Date(a).getTime(),
+    classes: 'time-column'
   },
   {
     name: 'details',
-    label: 'Event Details',
+    label: 'EVM Event Details',
     field: (row: Event) => row
   }
 ]
@@ -141,31 +158,49 @@ const expanded = ref([])
 
 const pagination = ref({
   page: 1,
-  rowsPerPage: 20
+  rowsPerPage: 15
 })
 
 function truncate(text: string): string {
   return text.length > 13 ? text.slice(0, 10) + '...' : text
 }
 
-onMounted(() => {
-  // Simulate data loading
-  setTimeout(() => {
-    loading.value = false
-  }, 4000) // Adjust the timeout as needed
-})
+function filterEvents(
+  rows: readonly Event[],
+  terms: string
+) {
+  const searchTerm = terms.toLowerCase()
+  return rows.filter(row => {
+    return Object.entries(row).some(([key, value]) => {
+      if (typeof value !== 'string' || key === 'id') return false
+      return value.toLowerCase().includes(searchTerm)
+    })
+  })
+}
+
 </script>
 
 <style scoped>
+.detailed-event-table {
+  background-color: var(--q-dark);
+  color: white;
+  max-height: 600px;
+  overflow-y: auto;
+  width: 100%;
+  max-width: 100vw;
+}
+
 .wrapped-cell {
   white-space: normal;
-  max-width: 800px;
+  max-width: 100%;
+  padding: 8px;
 }
 
 .row-details {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  width: 100%;
 }
 
 .detail-item {
@@ -173,6 +208,9 @@ onMounted(() => {
   background: rgba(0, 0, 0, 0.1);
   border-radius: 4px;
   margin: 2px;
+  flex: 1 1 auto;
+  min-width: 200px;
+  max-width: 100%;
 }
 
 .hash-link {
@@ -187,5 +225,21 @@ onMounted(() => {
 .event-type {
   background: var(--q-primary);
   color: white;
+}
+
+.time-column {
+  white-space: pre-line;
+  text-align: center;
+  line-height: 1.4;
+}
+
+@media (max-width: 600px) {
+  .detail-item {
+    min-width: 100%;
+  }
+
+  .time-column {
+    min-width: 100px;
+  }
 }
 </style>
