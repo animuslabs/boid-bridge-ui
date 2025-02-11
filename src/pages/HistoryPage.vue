@@ -20,39 +20,91 @@
         />
       </div>
     </div>
+
+    <q-table
+      :rows="formattedRows"
+      :columns="columns"
+      :key="tableKey"
+      sort-by="id"
+      dark
+      flat
+      bordered
+      dense
+      class="q-mb-md"
+      style="background-color: var(--q-dark); color: white;"
+    >
+      <template v-slot:body-cell-sender="props">
+        <q-td :props="props">
+          {{ truncate(props.value) }}
+          <q-tooltip>{{ props.value }}</q-tooltip>
+        </q-td>
+      </template>
+      <template v-slot:body-cell-memo="props">
+        <q-td :props="props">
+          {{ truncate(props.value) }}
+          <q-tooltip>{{ props.value }}</q-tooltip>
+        </q-td>
+      </template>
+      <template v-slot:body-cell-actions="props">
+        <q-btn flat color="negative" icon="delete" size="sm" @click="deleteRequest(props.row.id!)" />
+      </template>
+    </q-table>
     <ComprehensiveEventTable :events="filteredEvents" />
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useEvmStore } from 'src/stores/evmStore'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useEvmStore, BridgeRequest } from 'src/stores/evmStore'
+import { QTableProps } from 'quasar'
 import ComprehensiveEventTable from 'src/components/ComprehensiveEventTable.vue'
 import { Event } from 'src/lib/types/evmEvents'
 
 const evmStore = useEvmStore()
+const activeRequests = ref<BridgeRequest[]>([])
+const columns = ref<QTableProps['columns']>([
+  { name: 'id', label: 'ID', field: 'id', sortable: true },
+  { name: 'sender', label: 'Sender', field: 'sender', sortable: true },
+  { name: 'receiver', label: 'Receiver', field: 'receiver', sortable: true },
+  {
+    name: 'amount',
+    label: 'Amount',
+    field: (row) => `${row.amount} BOID`,
+    sortable: true
+  },
+  { name: 'memo', label: 'Memo', field: 'memo', sortable: false },
+  { name: 'formattedDate', label: 'Requested At', field: 'formattedDate', sortable: true },
+  { name: 'actions', label: 'Actions', field: 'actions', sortable: false }
+])
+
+// Add these lines near your reactive declarations:
+const tableKey = ref(0)
+watch(activeRequests, () => {
+  tableKey.value++
+})
+
 const allEvents = ref<Event[]>([])
 
 // Fetch all events on component mount
 onMounted(async () => {
   await evmStore.initializeBlockNumberFor30DaysAgo()
   try {
+    activeRequests.value = await evmStore.queryActiveRequests()
+    console.log('Active Requests:', activeRequests.value)
     const bridgeTransactions = await evmStore.fetchBridgeTransactionEvents()
     const validationStatuses = await evmStore.fetchValidationStatusEvents()
     const requestStatuses = await evmStore.fetchRequestStatusEvents()
-    const requestRetries = await evmStore.fetchRequestRetryStatusEvents()
-    const refundStatuses = await evmStore.fetchRefundStatusEvents()
-    const refundRetries = await evmStore.fetchRefundRetryStatusEvents()
     const bridgeRequests = await evmStore.fetchBridgeRequestEvents()
+    const requestRemovalSuccesses = await evmStore.fetchRequestRemovalSuccessEvents()
+    const failedRequestCleareds = await evmStore.fetchFailedRequestClearedEvents()
 
     allEvents.value = [
-      ...bridgeTransactions.value.map(e => ({ ...e, eventType: 'BridgeTransaction' })),
-      ...validationStatuses.value.map(e => ({ ...e, eventType: 'ValidationStatus' })),
-      ...requestStatuses.value.map(e => ({ ...e, eventType: 'RequestStatusCallback' })),
-      ...requestRetries.value.map(e => ({ ...e, eventType: 'RequestRetryStatus' })),
-      ...refundStatuses.value.map(e => ({ ...e, eventType: 'RefundStatus' })),
-      ...refundRetries.value.map(e => ({ ...e, eventType: 'RefundRetryStatus' })),
-      ...bridgeRequests.value.map(e => ({ ...e, eventType: 'BridgeRequest' })),
+      ...(bridgeTransactions.value?.map(e => ({ ...e, eventType: 'BridgeTransaction' })) || []),
+      ...(validationStatuses.value?.map(e => ({ ...e, eventType: 'ValidationStatus' })) || []),
+      ...(requestStatuses.value?.map(e => ({ ...e, eventType: 'RequestStatusCallback' })) || []),
+      ...(bridgeRequests.value?.map(e => ({ ...e, eventType: 'BridgeRequest' })) || []),
+      ...(requestRemovalSuccesses.value?.map(e => ({ ...e, eventType: 'RequestRemovalSuccess' })) || []),
+      ...(failedRequestCleareds.value?.map(e => ({ ...e, eventType: 'FailedRequestCleared' })) || []),
     ] as Event[]
   } catch (error) {
     console.error('Failed to fetch events:', error)
@@ -81,6 +133,37 @@ const filteredEvents = computed(() => {
     return eventDate >= cutoffDate
   })
 })
+
+// Add computed property for formatted dates
+const formattedRows = computed(() => {
+  return activeRequests.value.map(req => ({
+    ...req,
+    formattedDate: req.requested_at.toLocaleString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23'
+    })
+  }))
+})
+
+async function deleteRequest(id: number) {
+  try {
+    const result = await evmStore.removeRequest(id)
+    console.log('Request removed:', result)
+    activeRequests.value = await evmStore.queryActiveRequests()
+  } catch (error) {
+    console.error('Error removing request:', error)
+  }
+}
+
+function truncate(text: string): string {
+  if (!text) return ''
+  return text.length > 13 ? text.slice(0, 10) + '...' : text
+}
+
 </script>
 
 <style>

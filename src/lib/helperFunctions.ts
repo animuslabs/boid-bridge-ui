@@ -1,5 +1,4 @@
-import { BigNumberish } from "ethers";
-
+import { ethers, BigNumberish } from "ethers";
 // Function to check if an API URL is working by hitting /v1/chain/get_info
 async function isUrlWorking(url: string): Promise<boolean> {
   try {
@@ -46,3 +45,34 @@ export const bigNumberishToString = (bigNumberish: BigNumberish): string => {
 export const bigNumberishToBigInt = (bigNumberish: BigNumberish): bigint => {
   return BigInt(bigNumberish);
 };
+
+/**
+ * Safely parse a bytes32 value (0x....32bytes) into a UTF-8 string.
+ * If it's not zero-terminated or has unexpected data, parseBytes32String may throw,
+ * so we catch and fallback to returning the raw hex or an empty string.
+ */
+export function parseBytes32ToString(bytes32Val: string): string {
+  if (!bytes32Val || bytes32Val === ethers.ZeroHash) {
+    return "";
+  }
+  try {
+    // Convert bytes32 to a buffer and then to a string
+    const buffer = Buffer.from(bytes32Val.replace(/^0x/, ''), 'hex');
+    return buffer.toString('utf8').replace(/\0/g, ''); // Remove null characters
+  } catch {
+    // Fallback: just return the raw hex if parsing fails
+    return bytes32Val;
+  }
+}
+
+// Add a helper to decode left‐aligned bytes32 (as in Solidity)
+export function customBytes32ToString(bytes32: string): string {
+  const hex = bytes32.startsWith('0x') ? bytes32.slice(2) : bytes32;
+  let str = '';
+  for (let i = 0; i < hex.length; i += 2) {
+      const code = parseInt(hex.substr(i, 2), 16);
+      if (code === 0) break; // stop at the first null byte
+      str += String.fromCharCode(code);
+    }
+    return str;
+  }

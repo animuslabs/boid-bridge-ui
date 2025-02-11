@@ -1,8 +1,9 @@
 export interface BridgeTransactionEvent {
+  id: number;
   receiver: string;
   token: string;
   amount: string;
-  status: string;
+  status: RequestStatus;
   timestamp: string;
   sender: string;
   fromTokenContract: string;
@@ -46,7 +47,7 @@ export interface BridgeRequestEvent {
   receiver: string;
   timestamp: string;
   memo: string;
-  status: string;
+  status: RequestStatus;
   reason: string;
   transactionHash: string;
 }
