@@ -3,7 +3,7 @@ import { APIClient, Action, Name, Asset } from '@wharfkit/antelope'
 import { Account } from '@wharfkit/account'
 import { ContractKit } from '@wharfkit/contract'
 import { useSessionStore } from 'src/stores/sessionStore'
-import { EventEmitter } from 'events'
+import { notifyEvent } from 'src/lib/helperFunctions'
 import { configuration } from './config'
 import {
   abi as eosioTokenABI,
@@ -35,11 +35,10 @@ import { abi as eosioEvmABI } from './types/eosio.evm'
 import { getWorkingUrl } from 'src/lib/helperFunctions'
 
 const sessionStore = useSessionStore()
-export const notifyEvent = new EventEmitter()
 
 async function getAPIClient(): Promise<APIClient> {
   // const url = await getWorkingUrl(configuration.mainnet.native.apis.map((api) => api.url))
-  const url = await getWorkingUrl(configuration.testnet.native.apis.map(api => api.url))
+  const url = await getWorkingUrl(configuration.testnet.native.apis.map((api) => api.url))
   if (!url) {
     throw new Error(`Invalid url: ${url}.`)
   }
@@ -107,7 +106,7 @@ export async function createBoidTokenAction<A extends BoidTokenActionNames>(
     console.log('Transacting action...')
     const result = await session.transact({ action: actionData })
     console.log('Transaction result:', result)
-    notifyEvent.emit('TrxResult', result)
+    notifyEvent.emit('TrxResult', result.response?.transaction_id || 'unknown')
     return result
   } catch (error) {
     console.error('Error in createAction:', error)
@@ -142,7 +141,7 @@ export async function createEosioTokenAction<A extends EosioTokenActionNames>(
     console.log('Transacting action...')
     const result = await session.transact({ action: actionData })
     console.log('Transaction result:', result)
-    notifyEvent.emit('TrxResult', result)
+    notifyEvent.emit('TrxResult', result.response?.transaction_id || 'unknown')
     return result
   } catch (error) {
     console.error('Error in createEosioTokenAction:', error)
@@ -177,7 +176,7 @@ export async function createXsendAction<A extends XSendActionNames>(
     console.log('Transacting action...')
     const result = await session.transact({ action: actionData })
     console.log('Transaction result:', result)
-    notifyEvent.emit('TrxResult', result)
+    notifyEvent.emit('TrxResult', result.response?.transaction_id || 'unknown')
     return result
   } catch (error) {
     console.error('Error in createXsendAction:', error)
@@ -212,7 +211,7 @@ export async function createEvmBoidAction<A extends EvmBoidActionNames>(
     console.log('Transacting action...')
     const result = await session.transact({ action: actionData })
     console.log('Transaction result:', result)
-    notifyEvent.emit('TrxResult', result)
+    notifyEvent.emit('TrxResult', result.response?.transaction_id || 'unknown')
     return result
   } catch (error) {
     console.error('Error in createEvmBoidAction:', error)
@@ -271,7 +270,7 @@ export async function createEosioAndBoidTokenActions<
     console.log('Transacting multiple actions...')
     const result = await session.transact({ actions: [eosioActionData, boidActionData] })
     console.log('Transaction result:', result)
-    notifyEvent.emit('TrxResult', result)
+    notifyEvent.emit('TrxResult', result.response?.transaction_id || 'unknown')
     return result
   } catch (error) {
     console.error('Error in createEosioAndBoidTokenActions:', error)
@@ -328,15 +327,15 @@ export async function fetchDataFromEvmBoidTable<T extends EvmBoidTableNames>(
   }
 }
 
-export async function fetchDataFromTokenBoidTable(actor:string): Promise<number> {
-  const tableName = "accounts"
+export async function fetchDataFromTokenBoidTable(actor: string): Promise<number> {
+  const tableName = 'accounts'
   try {
     const contractName = configuration.mainnet.native.contracts[1]?.contract.toString() || '' // Assuming index 1 for token.boid based on previous segments
     const kit = await createContractKit()
-    const contract:BoidTokenContract = await kit.load(contractName)
-    const tableData = await contract.table("accounts").all({scope: Name.from(actor), maxRows: 1})
+    const contract: BoidTokenContract = await kit.load(contractName)
+    const tableData = await contract.table('accounts').all({ scope: Name.from(actor), maxRows: 1 })
     const balance = tableData[0]?.balance.toString() || '0'
-    const numericalValue = parseFloat(balance);
+    const numericalValue = parseFloat(balance)
     return numericalValue
   } catch (error: unknown) {
     console.error(`Error fetching data from ${tableName}:`, error)

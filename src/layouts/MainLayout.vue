@@ -57,6 +57,7 @@
 import MainDialog from 'src/components/dialogBoxes/MainDialog.vue';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router'
+import { notifyEvent, showNotification } from "src/lib/helperFunctions"
 
 const dialogsRef = ref();
 const router = useRouter();
@@ -64,6 +65,14 @@ const router = useRouter();
 const showInfo = () => {
   dialogsRef.value?.showInfo();
 };
+
+notifyEvent.on('TrxResult', (result) => {
+  showNotification(result)
+})
+
+notifyEvent.on('EvmTrxResult', ({ hash, isError }) => {
+  showNotification(hash || 'unknown', isError, true)
+})
 </script>
 
 <style scoped>

@@ -19,6 +19,7 @@ import {
   RequestRemovalSuccessEvent,
   FailedRequestClearedEvent,
 } from 'src/lib/types/evmEvents'
+import { notifyEvent } from 'src/lib/helperFunctions'
 
 export interface BridgeRequest {
   id: number
@@ -90,7 +91,10 @@ export const useEvmStore = defineStore('evmStore', () => {
       functionName: 'approve',
       args: [bridgeContractAddress, amount],
     })
-    return tokenContract
+    return tokenContract.then((txHash) => {
+      notifyEvent.emit('EvmTrxResult', { hash: txHash, isError: false })
+      return txHash
+    })
   }
 
   // Bridge Token to Native function
@@ -104,7 +108,10 @@ export const useEvmStore = defineStore('evmStore', () => {
       args: [tokenContractAddress, amount, antelopeAddress, memo],
       value: parseEther('0.5'),
     })
-    return bridgeContract
+    return bridgeContract.then((txHash) => {
+      notifyEvent.emit('EvmTrxResult', { hash: txHash, isError: false })
+      return txHash
+    })
   }
 
   // Modified removeRequest function to return an object with trx result
@@ -122,9 +129,11 @@ export const useEvmStore = defineStore('evmStore', () => {
       })
       const txReceipt = await ethersProvider.waitForTransaction(txHash)
       if (!txReceipt) throw new Error('Transaction receipt not found')
+      notifyEvent.emit('EvmTrxResult', { hash: txReceipt.hash, isError: false })
       return { success: true, hash: txReceipt.hash }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      notifyEvent.emit('EvmTrxResult', { hash: '', isError: true, error: errorMessage })
       return { success: false, error: errorMessage }
     }
   }

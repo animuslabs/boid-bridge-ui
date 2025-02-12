@@ -14,46 +14,108 @@
     <q-tab-panels v-model="activeTab" animated class="full-width transparent-tabs">
       <q-tab-panel name="requests" class="flex flex-center">
         <div class="q-table-container">
-          <q-table
-            :rows="formattedRows"
-            :columns="columns"
-            :key="tableKey"
-            sort-by="id"
-            dark
-            flat
-            bordered
-            dense
-            class="q-mb-md"
-            style="background-color: var(--q-dark); color: white; width: 100%;"
-          >
-            <template v-slot:body-cell-sender="props">
-              <q-td :props="props">
-                {{ truncate(props.value) }}
-                <q-tooltip>{{ props.value }}</q-tooltip>
-              </q-td>
-            </template>
-            <template v-slot:body-cell-memo="props">
-              <q-td :props="props">
-                {{ truncate(props.value) }}
-                <q-tooltip>{{ props.value }}</q-tooltip>
-              </q-td>
-            </template>
-            <template v-slot:body-cell-actions="props">
-              <q-btn flat color="negative" icon="delete" size="sm" @click="deleteRequest(props.row.id!)">
-                <q-tooltip>Refund Request {{ props.row.id }}</q-tooltip>
-              </q-btn>
-              <q-btn flat color="green" icon="thumb_up_alt" size="sm">
-                <q-tooltip>Approve Request {{ props.row.id }} on Telos Native</q-tooltip>
-              </q-btn>
-            </template>
-          </q-table>
+          <template v-if="isLoading">
+            <div class="flex flex-center q-pa-md">
+              <q-spinner-hourglass color="white" size="2em" />
+            </div>
+          </template>
+          <template v-else>
+            <div class="text-h6 text-white q-mb-md">
+              EVM <q-icon name="info" color="white">
+              <q-tooltip>Unverified Requests on EVM side.</q-tooltip></q-icon>
+            </div>
+            <q-table
+              :rows="formattedRows"
+              :columns="columns"
+              :key="tableKey"
+              sort-by="id"
+              dark
+              flat
+              bordered
+              dense
+              class="q-mb-md"
+              style="background-color: var(--q-dark); color: white; width: 100%;"
+            >
+              <template v-slot:body-cell-sender="props">
+                <q-td :props="props">
+                  {{ truncate(props.value) }}
+                  <q-tooltip>{{ props.value }}</q-tooltip>
+                </q-td>
+              </template>
+              <template v-slot:body-cell-memo="props">
+                <q-td :props="props">
+                  {{ truncate(props.value) }}
+                  <q-tooltip>{{ props.value }}</q-tooltip>
+                </q-td>
+              </template>
+              <template v-slot:body-cell-actions="props">
+                <q-btn
+                  flat
+                  color="negative"
+                  icon="delete"
+                  size="sm"
+                  :disabled="(new Date().getTime() - props.row.requested_at.getTime() < 30 * 60 * 1000) || (props.row.sender.toLowerCase() !== loggedEvmAccountFull?.toLowerCase())"
+                  @click="deleteRequest(props.row.id!)"
+                >
+                  <q-tooltip>
+                    {{ props.row.sender.toLowerCase() !== loggedEvmAccountFull?.toLowerCase()
+                      ? 'Only request sender can refund'
+                      : new Date().getTime() - props.row.requested_at.getTime() < 30 * 60 * 1000
+                        ? `Available to refund after: ${new Date(props.row.requested_at.getTime() + 1800000).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'})}`
+                        : `Refund Request ${props.row.id}` }}
+                  </q-tooltip>
+                </q-btn>
+                <q-btn flat color="green" icon="thumb_up_alt" size="sm" @click="approveRequest(props.row.id!)">
+                  <q-tooltip>Approve Request {{ props.row.id }} on Telos Native</q-tooltip>
+                </q-btn>
+              </template>
+            </q-table>
+
+            <div class="text-h6 text-white q-mb-md q-mt-lg">Native  <q-icon name="info" color="white">
+              <q-tooltip>Unverified Requests on Telos Native side.</q-tooltip></q-icon></div>
+            <q-table
+              :rows="activeRequestsTableNative"
+              :columns="nativeColumns"
+              dark
+              flat
+              bordered
+              dense
+              class="q-mb-md"
+              style="background-color: var(--q-dark); color: white; width: 100%;"
+            >
+              <template v-slot:body-cell-sender="props">
+                <q-td :props="props">
+                  {{ truncate(props.value) }}
+                  <q-tooltip>{{ props.value }}</q-tooltip>
+                </q-td>
+              </template>
+              <template v-slot:body-cell-actions="props">
+                <q-td :props="props">
+                  <q-btn flat color="green" :icon="props.row.processed ? 'verified' : 'thumb_up_alt'" size="sm" :disabled="props.row.processed" @click="verifyRequest(Number(props.row.request_id))">
+                    <q-tooltip>
+                      {{ props.row.processed ? 'Request already processed' : `Verify Request ${props.row.request_id}` }}
+                    </q-tooltip>
+                  </q-btn>
+                </q-td>
+              </template>
+            </q-table>
+          </template>
         </div>
       </q-tab-panel>
 
       <q-tab-panel name="events" class="flex flex-center">
-        <DetailedEventTable :events="allEvents"/>
-
-        <DetailedNativeTable />
+        <template v-if="isLoading">
+          <div class="flex flex-center q-pa-md">
+            <q-spinner-hourglass
+              color="white"
+              size="2em"
+            />
+          </div>
+        </template>
+        <template v-else>
+          <DetailedEventTable :events="allEvents"/>
+          <DetailedNativeTable />
+        </template>
       </q-tab-panel>
     </q-tab-panels>
   </q-page>
@@ -66,9 +128,12 @@ import { QTableProps } from 'quasar'
 import DetailedEventTable from 'src/components/DetailedEventTable.vue'
 import DetailedNativeTable from 'src/components/DetailedNativeTable.vue'
 import { Event } from 'src/lib/types/evmEvents'
-
+import { ActionParams as EvmBoidActionParams, TableTypes as EvmBoidTableTypes } from "src/lib/types/evm.boid";
+import { createEvmBoidAction, fetchDataFromEvmBoidTable } from "src/lib/antelope";
 const evmStore = useEvmStore()
-const activeRequests = ref<BridgeRequest[]>([])
+const loggedEvmAccountFull = computed(() => evmStore.address)
+const activeRequestsOnEvm = ref<BridgeRequest[]>([])
+const activeRequestsTableNative = ref<EvmBoidTableTypes['requests'][]>([])
 const columns = ref<QTableProps['columns']>([
   { name: 'id', label: 'ID', field: 'id', sortable: true },
   { name: 'sender', label: 'Sender', field: 'sender', sortable: true },
@@ -84,20 +149,60 @@ const columns = ref<QTableProps['columns']>([
   { name: 'actions', label: 'Actions', field: 'actions', sortable: false }
 ])
 
+const nativeColumns = ref<QTableProps['columns']>([
+  { name: 'id', label: 'ID', field: (row) => Number(row.request_id), sortable: true },
+  { name: 'sender', label: 'Sender', field: 'sender', sortable: true },
+  { name: 'receiver', label: 'Receiver', field: (row) => `${row.receiver}`, sortable: true },
+  { name: 'amount', label: 'Amount', field: (row) => `${row.amount} BOID`, sortable: true },
+  {
+    name: 'timestamp',
+    label: 'Created At',
+    field: 'timestamp',
+    format: (val) => new Date(val).toLocaleString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23'
+    }),
+    sortable: true
+  },
+  { name: 'status', label: 'Status', field: (row) => `${row.processed ? 'Done' : 'Pending'}`, sortable: true },
+  { name: 'actions', label: 'Actions', field: 'actions', sortable: false }
+])
+
 // Add these lines near your reactive declarations:
 const tableKey = ref(0)
-watch(activeRequests, () => {
+watch(activeRequestsOnEvm, () => {
   tableKey.value++
 })
 
 const allEvents = ref<Event[]>([])
 
+// Add isLoading ref initialized to false
+const isLoading = ref(false)
+
 // Fetch all events on component mount
 onMounted(async () => {
+  // Set isLoading to true before fetching data
+  isLoading.value = true
   await evmStore.initBlockNumber7DaysAgo()
   try {
-    activeRequests.value = await evmStore.queryActiveRequests()
-    console.log('Active Requests:', activeRequests.value)
+    activeRequestsOnEvm.value = await evmStore.queryActiveRequests()
+    activeRequestsTableNative.value = (await fetchDataFromEvmBoidTable('requests')) ?? []
+  } catch (error) {
+    console.error('Failed to fetch requests:', error)
+  } finally {
+    // Set isLoading to false after fetching data
+    isLoading.value = false
+  }
+})
+
+const loadDetailedData = async () => {
+  isLoading.value = true
+  try {
+    console.log('Active Requests:', activeRequestsOnEvm.value)
     const bridgeTransactions = await evmStore.fetchBridgeTransactionEvents()
     const validationStatuses = await evmStore.fetchValidationStatusEvents()
     const requestStatuses = await evmStore.fetchRequestStatusEvents()
@@ -115,12 +220,14 @@ onMounted(async () => {
     ] as Event[]
   } catch (error) {
     console.error('Failed to fetch events:', error)
+  } finally {
+    isLoading.value = false
   }
-})
+}
 
 // Add computed property for formatted dates
 const formattedRows = computed(() => {
-  return activeRequests.value.map(req => ({
+  return activeRequestsOnEvm.value.map(req => ({
     ...req,
     formattedDate: req.requested_at.toLocaleString('en-GB', {
       day: '2-digit',
@@ -137,7 +244,7 @@ async function deleteRequest(id: number) {
   try {
     const result = await evmStore.removeRequest(id)
     console.log('Request removed:', result)
-    activeRequests.value = await evmStore.queryActiveRequests()
+    activeRequestsOnEvm.value = await evmStore.queryActiveRequests()
   } catch (error) {
     console.error('Error removing request:', error)
   }
@@ -150,6 +257,38 @@ function truncate(text: string): string {
 
 // Add this near other reactive declarations
 const activeTab = ref<'requests' | 'events'>('requests')
+
+// Add this watch to trigger detailed data loading
+watch(activeTab, async (newVal) => {
+  if (newVal === 'events' && allEvents.value.length === 0) {
+    await loadDetailedData()
+  }
+})
+
+watch(loggedEvmAccountFull, async (newAccount) => {
+  if (newAccount) {
+    activeRequestsOnEvm.value = await evmStore.queryActiveRequests()
+  }
+})
+
+async function approveRequest(id: number) {
+  const action: EvmBoidActionParams.reqnotify = {
+    req_id: id,
+  }
+  const result = await createEvmBoidAction('reqnotify', action)
+  console.log('Request approved:', result)
+  activeRequestsOnEvm.value = await evmStore.queryActiveRequests()
+}
+async function verifyRequest(id: number) {
+  const action: EvmBoidActionParams.verifytrx = {
+    req_id: BigInt(id),
+  }
+  const result = await createEvmBoidAction('verifytrx', action)
+  console.log('Request verified:', result)
+  activeRequestsTableNative.value = (await fetchDataFromEvmBoidTable('requests')) ?? []
+}
+
+
 </script>
 
 <style>

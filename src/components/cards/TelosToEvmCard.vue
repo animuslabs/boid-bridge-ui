@@ -84,8 +84,7 @@ import { Name, Asset } from '@wharfkit/antelope'
 import { configuration } from 'src/lib/config'
 import { ethers } from "ethers";
 import { useSessionStore } from 'src/stores/sessionStore';
-import { fetchDataFromTokenBoidTable } from "src/lib/antelope";
-import { createEosioAndBoidTokenActions } from "src/lib/antelope";
+import { createEosioAndBoidTokenActions, fetchDataFromTokenBoidTable } from "src/lib/antelope";
 import { ActionParams as EosioTokenActionParams } from "src/lib/types/eosio.token";
 import { ActionParams as TokenBoidActionParams } from "src/lib/types/token.boid";
 
