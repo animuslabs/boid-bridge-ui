@@ -22,6 +22,7 @@
     "@wharfkit/antelope": "^1.0.13",
     "@wharfkit/common": "^1.4.2",
     "@wharfkit/contract": "^1.2.0",
+    "@wharfkit/hyperion": "^1.0.4",
     "@wharfkit/session": "^1.4.0",
     "@wharfkit/wallet-plugin-anchor": "^1.4.0",
     "@wharfkit/web-renderer": "^1.4.1",

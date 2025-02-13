@@ -1,15 +1,16 @@
 <template>
   <q-page class="column items-center justify-start q-pt-lg">
-    <q-tabs
-      v-model="activeTab"
-      dense
-      class="text-white"
-      active-color="primary"
-      indicator-color="primary"
-    >
-      <q-tab name="requests" label="Basic" />
-      <q-tab name="events" label="Detailed" />
-    </q-tabs>
+    <div class="full-width q-px-xl">
+      <q-tabs
+        v-model="activeTab"
+        dense
+        class="text-white"
+        active-color="primary"
+        indicator-color="primary"
+      >
+        <q-tab name="requests" label="Live" />
+        <q-tab name="events" label="History" />
+      </q-tabs>
 
     <q-tab-panels v-model="activeTab" animated class="full-width transparent-tabs">
       <q-tab-panel name="requests" class="flex flex-center">
@@ -103,21 +104,19 @@
         </div>
       </q-tab-panel>
 
-      <q-tab-panel name="events" class="flex flex-center">
-        <template v-if="isLoading">
-          <div class="flex flex-center q-pa-md">
-            <q-spinner-hourglass
-              color="white"
-              size="2em"
-            />
-          </div>
-        </template>
-        <template v-else>
-          <DetailedEventTable :events="allEvents"/>
-          <DetailedNativeTable />
-        </template>
-      </q-tab-panel>
-    </q-tab-panels>
+        <q-tab-panel name="events" class="flex flex-center q-table-container-history">
+          <template v-if="isLoading">
+            <div class="flex flex-center q-pa-md">
+              <q-spinner-hourglass color="white" size="2em" />
+            </div>
+          </template>
+          <template v-else>
+            <DetailedEventTable :events="allEvents" class="q-mb-md"/>
+            <DetailedNativeTable :hyperionActions="hyperionActions" />
+          </template>
+        </q-tab-panel>
+      </q-tab-panels>
+    </div>
   </q-page>
 </template>
 
@@ -130,10 +129,14 @@ import DetailedNativeTable from 'src/components/DetailedNativeTable.vue'
 import { Event } from 'src/lib/types/evmEvents'
 import { ActionParams as EvmBoidActionParams, TableTypes as EvmBoidTableTypes } from "src/lib/types/evm.boid";
 import { createEvmBoidAction, fetchDataFromEvmBoidTable } from "src/lib/antelope";
+import { queryAllActions, ActionResponse } from 'src/lib/hyperion'
+
 const evmStore = useEvmStore()
 const loggedEvmAccountFull = computed(() => evmStore.address)
 const activeRequestsOnEvm = ref<BridgeRequest[]>([])
 const activeRequestsTableNative = ref<EvmBoidTableTypes['requests'][]>([])
+const hyperionActions = ref<ActionResponse[]>([])
+
 const columns = ref<QTableProps['columns']>([
   { name: 'id', label: 'ID', field: 'id', sortable: true },
   { name: 'sender', label: 'Sender', field: 'sender', sortable: true },
@@ -218,6 +221,8 @@ const loadDetailedData = async () => {
       ...(requestRemovalSuccesses.value?.map(e => ({ ...e, eventType: 'RequestRemovalSuccess' })) || []),
       ...(failedRequestCleareds.value?.map(e => ({ ...e, eventType: 'FailedRequestCleared' })) || []),
     ] as Event[]
+    hyperionActions.value = await queryAllActions() ?? []
+    console.log('Hyperion Actions:', hyperionActions.value)
   } catch (error) {
     console.error('Failed to fetch events:', error)
   } finally {
@@ -341,6 +346,11 @@ async function verifyRequest(id: number) {
 
 .q-table-container {
   max-width: 650px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.q-table-container-history {
   width: 100%;
   margin: 0 auto;
 }

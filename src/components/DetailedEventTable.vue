@@ -214,12 +214,13 @@ function filterEvents(
 }
 
 .hash-link {
-  color: var(--q-primary);
+  color: #42a5f5 !important;
   text-decoration: none;
 }
 
 .hash-link:hover {
   text-decoration: underline;
+  opacity: 0.8;
 }
 
 .event-type {

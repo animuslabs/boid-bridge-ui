@@ -7,7 +7,7 @@
     </q-card-section>
 
     <q-card-section class="q-pt-none">
-      The Tokens Bridge allows you to transfer tokens between Telos Native and Telos EVM.
+      The Tokens Bridge allows you to transfer BOID tokens between Telos Native and Telos EVM.
     </q-card-section>
     <q-card-section class="q-pt-none">
       <p>To use the bridge:</p>
@@ -17,6 +17,26 @@
         <li>Review the transaction details</li>
         <li>Confirm and sign the transaction</li>
       </ol>
+      <p class="text-caption" style="color: green; font-weight: bolder">NOTE:
+        <br>Transfers from Native to EVM should be instant.
+        <br>Manual completion is only required for transactions not automatically processed within expected timeframes.
+      </p>
+    </q-card-section>
+    <q-card-section class="q-pt-none">
+      <p>Transaction management features:</p>
+      <ul>
+        <li>View complete transaction history with status tracking</li>
+        <li>Manual two step process for finalization of EVM-to-Native transfers:
+            <ol type="a">
+              <li>First you approve the transaction in EVM table</li>
+              <li>Then verify and finalize the transaction in Native table</li>
+            </ol>
+        </li>
+      </ul>
+    </q-card-section>
+    <q-card-section class="q-pt-none">
+      <p>Any questions about the bridge?</p>
+      <p>Contact us on <a href="https://t.me/boidcommunity">Telegram</a></p>
     </q-card-section>
     <q-card-actions allign="right">
       <q-btn flat label="Close" color="primary" v-close-popup />
@@ -29,7 +49,7 @@
 import { ref } from 'vue'
 import { defineExpose } from 'vue'
 
-const infoDialog = ref(false) 
+const infoDialog = ref(false)
 
 const showInfo = () => {
   infoDialog.value = true
