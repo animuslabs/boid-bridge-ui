@@ -44,6 +44,7 @@
             :input-style="{ color: 'white' }"
             dense
             clearable
+            step="1"
             @blur="validateInteger"
           />
           <div style="margin-left: 10px; align-self: center; font-size: 1.2rem;">BOID</div>
@@ -79,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { Name, Asset } from '@wharfkit/antelope'
 import { configuration } from 'src/lib/config'
 import { ethers } from "ethers";
@@ -169,15 +170,37 @@ const handleToEVMTransfer = async () => {
       "transfer",
       transferBOIDaction
     );
+    // Wait briefly for the blockchain to register the transfer, then update the BOID token balance
+    setTimeout(() => {
+      void (async () => {
+        if (sessionStore.session && sessionStore.session.actor) {
+          boidBalance.value = await getAccBOIDbalance(sessionStore.session.actor.toString());
+        }
+      })();
+    }, 2000); // 2-second delay before updating balance
   } catch (e) {
     console.error("Transfer failed:", e);
   }
 };
 
-// Watch the session for changes
+// Update balance on session changes
 watch(() => sessionStore.session, async (newSession) => {
   if (newSession && newSession.actor) {
     boidBalance.value = await getAccBOIDbalance(newSession.actor.toString());
+  }
+});
+
+// Refresh BOID balance when component mounts
+onMounted(async () => {
+  if (sessionStore.session && sessionStore.session.actor) {
+    boidBalance.value = await getAccBOIDbalance(sessionStore.session.actor.toString());
+  }
+});
+
+// Force token amount to always be an integer by flooring any decimals immediately on input
+watch(boidTokenAmount, (newValue) => {
+  if (newValue !== null && !Number.isInteger(newValue)) {
+    boidTokenAmount.value = Math.floor(newValue);
   }
 });
 </script>

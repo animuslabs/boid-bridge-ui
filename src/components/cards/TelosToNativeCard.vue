@@ -74,6 +74,7 @@
             :input-style="{ color: 'white' }"
             dense
             clearable
+            step="1"
             @blur="validateInteger"
           />
           <div style="margin-left: 10px; align-self: center; font-size: 1.2rem;">BOID</div>
@@ -132,28 +133,44 @@ const telosNamePattern = /^[a-z1-5.]{1,12}$/;
 
 const accountEvmBOIDBalance = ref('0')
 
-// Watch for changes in the connection status and fetch balance
-watchEffect(() => {
-  async function updateBoidBalance() {
-    if (evmStore.isConnected && evmStore.address) {
-      try {
-        const balance = await evmStore.getBOIDTokenBalance(evmStore.address);
-        accountEvmBOIDBalance.value = balance.toString();
-      } catch (error) {
-        console.error("Error fetching BOID balance:", error);
-        accountEvmBOIDBalance.value = '0';
-      }
-    } else {
+
+async function updateBoidBalance(): Promise<void> {
+  if (evmStore.isConnected && evmStore.address) {
+    try {
+      const balance = await evmStore.getBOIDTokenBalance(evmStore.address);
+      accountEvmBOIDBalance.value = balance.toString();
+    } catch (error) {
+      console.error("Error fetching BOID balance:", error);
       accountEvmBOIDBalance.value = '0';
     }
+  } else {
+    accountEvmBOIDBalance.value = '0';
   }
-  // Use void to explicitly ignore the promise
+}
+
+// Watch for changes in the connection status and fetch balance
+watchEffect(() => {
   void updateBoidBalance();
 });
 
 // Watch for destinationAddress changes
 watch(destinationAddress, (newAddress) => {
   handleDestinationAddressChange(newAddress);
+});
+
+// Watch for boidId changes
+watch(boidId, (newBoidId) => {
+  handleBoidIdChange(newBoidId);
+});
+
+// Watch for changes in the toggle
+watch(showBoidId, (newVal) => {
+  if (newVal) {
+    destinationAddress.value = "boid";
+    boidId.value = "";
+    localError.value = null;
+    isValid.value = false;
+  }
 });
 
 // Watch for boidId changes
@@ -337,10 +354,19 @@ async function handleToNativeTransfer() {
     destinationAddress.value,
     boidId.value ? `deposit boid_id=${boidId.value}` : "Bridge Transfer"
   );
+  // refresh BOID balance with a delay
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  await updateBoidBalance();
   if (!bridgeTx) {
     console.error("bridgeTx transaction not returned");
     return;
   }
 }
 
+// Force token amount to always be an integer by flooring any decimals immediately on input
+watch(boidTokenAmountEvm, (newValue) => {
+  if (newValue !== null && !Number.isInteger(newValue)) {
+    boidTokenAmountEvm.value = Math.floor(newValue);
+  }
+});
 </script>

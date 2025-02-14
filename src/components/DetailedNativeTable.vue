@@ -75,8 +75,8 @@
 <script setup lang="ts">
 
 import { defineProps, ref } from 'vue'
-import type { QTableColumn } from 'quasar'
-import type { ActionResponse } from 'src/lib/hyperion'
+import { QTableColumn } from 'quasar'
+import { ActionResponse } from 'src/lib/hyperion'
 import { configuration } from 'src/lib/config'
 
 const truncate = (text: string): string => {
