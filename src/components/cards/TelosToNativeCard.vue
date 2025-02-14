@@ -111,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, watchEffect } from "vue";
+import { ref, watch, computed, watchEffect, onMounted, onActivated } from "vue";
 import { loadAccount, fetchDataFromBoidTable } from "src/lib/antelope"; // Adjust import path
 import { useEvmStore } from 'src/stores/evmStore'
 import { parseEther } from 'ethers';
@@ -140,11 +140,11 @@ async function updateBoidBalance(): Promise<void> {
       const balance = await evmStore.getBOIDTokenBalance(evmStore.address);
       accountEvmBOIDBalance.value = balance.toString();
     } catch (error) {
-      console.error("Error fetching BOID balance:", error);
-      accountEvmBOIDBalance.value = '0';
+      console.error("Error fetching TLOS balance:", error);
+      accountEvmBOIDBalance.value = "0";
     }
   } else {
-    accountEvmBOIDBalance.value = '0';
+    accountEvmBOIDBalance.value = "0";
   }
 }
 
@@ -368,5 +368,13 @@ watch(boidTokenAmountEvm, (newValue) => {
   if (newValue !== null && !Number.isInteger(newValue)) {
     boidTokenAmountEvm.value = Math.floor(newValue);
   }
+});
+
+onMounted(async () => {
+  await updateBoidBalance();
+});
+
+onActivated(async () => {
+  await updateBoidBalance();
 });
 </script>

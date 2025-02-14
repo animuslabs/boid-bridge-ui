@@ -105,7 +105,20 @@ watch(() => sessionStore.isLoggedIn, async (loggedIn) => {
     accountBalance.value = "0.0000 TLOS";
   }
 });
-
+onMounted(async () => {
+  const actorName = sessionStore.session?.actor?.toString();
+  if (actorName) {
+      try {
+        const accountData = await loadAccount(actorName);
+        accountBalance.value =
+          accountData?.value.toString() + " TLOS" || "0.0000 TLOS";
+      } catch (error) {
+        console.error("Error loading account:", error);
+        accountBalance.value = "0.0000 TLOS";
+      }
+    }
+  }
+);
 
 </script>
 
