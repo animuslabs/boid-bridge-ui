@@ -105,3 +105,12 @@ export function showNotification(transactionId: string, isError = false, isEvm =
         ],
   })
 }
+
+// Add type guards for raw data objects
+export function hasDataProperty(x: unknown): x is { data: unknown } {
+  return typeof x === 'object' && x !== null && 'data' in x
+}
+
+export function hasResultsProperty(x: unknown): x is { results: unknown } {
+  return typeof x === 'object' && x !== null && 'results' in x
+}

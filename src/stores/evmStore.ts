@@ -9,6 +9,8 @@ import {
   bigNumberishToBigInt,
   bigNumberishToString,
   customBytes32ToString,
+  hasDataProperty,
+  hasResultsProperty,
 } from 'src/lib/helperFunctions'
 import { ref } from 'vue'
 import {
@@ -512,7 +514,8 @@ export const useEvmStore = defineStore('evmStore', () => {
 
     // Teloscan API endpoint – use the testnet or mainnet URL as appropriate.
     const baseUrl = configuration.testnet.evm.historyAPI
-    const endpoint = `${baseUrl}/v1/token/${tokenContractAddress}/transfers`
+    const sevenDaysAgoTimestamp = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60
+    const endpoint = `${baseUrl}/v1/token/${tokenContractAddress}/transfers?after=${sevenDaysAgoTimestamp}`
     console.log('endpoint', endpoint)
     try {
       const response = await fetch(endpoint)
@@ -554,15 +557,6 @@ export const useEvmStore = defineStore('evmStore', () => {
       console.error('Error fetching contract transactions:', error)
       return []
     }
-  }
-
-  // Add type guards for raw data objects
-  function hasDataProperty(x: unknown): x is { data: unknown } {
-    return typeof x === 'object' && x !== null && 'data' in x
-  }
-
-  function hasResultsProperty(x: unknown): x is { results: unknown } {
-    return typeof x === 'object' && x !== null && 'results' in x
   }
 
   return {
