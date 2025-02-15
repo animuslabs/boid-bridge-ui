@@ -93,7 +93,7 @@ export function showNotification(transactionId: string, isError = false, isEvm =
     color: isError ? 'negative' : 'positive',
     icon: isError ? 'mdi-alert-circle' : 'mdi-check-circle',
     position: 'bottom',
-    timeout: 20000,
+    timeout: 30000,
     actions: isError
       ? []
       : [

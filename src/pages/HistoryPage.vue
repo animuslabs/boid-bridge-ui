@@ -22,7 +22,7 @@
           </template>
           <template v-else>
             <div class="text-h6 text-white q-mb-md">
-              EVM <q-icon name="info" color="white">
+              Confirm EVM Request <q-icon name="info" color="white">
               <q-tooltip>Unverified Requests on EVM side.</q-tooltip></q-icon>
             </div>
             <q-table
@@ -71,8 +71,10 @@
                 </q-btn>
               </template>
             </q-table>
-
-            <div class="text-h6 text-white q-mb-md q-mt-lg">Native  <q-icon name="info" color="white">
+            <div class="flex flex-center">
+              <q-icon name="keyboard_double_arrow_down" color="white" size="2em"></q-icon>
+            </div>
+            <div class="text-h6 text-white q-mb-md q-mt-lg">Release Tokens <q-icon name="info" color="white">
               <q-tooltip>Unverified Requests on Telos Native side.</q-tooltip></q-icon></div>
             <q-table
               :rows="activeRequestsTableNative"
