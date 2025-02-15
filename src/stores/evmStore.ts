@@ -11,6 +11,7 @@ import {
   customBytes32ToString,
   hasDataProperty,
   hasResultsProperty,
+  normalizeTelosTimestamp,
 } from 'src/lib/helperFunctions'
 import { ref } from 'vue'
 import {
@@ -506,17 +507,21 @@ export const useEvmStore = defineStore('evmStore', () => {
   }
 
   async function fetchTelosContractTransactions() {
-    // Ensure the contract address is valid.
     if (!tokenContractAddress?.startsWith('0x')) {
       console.error('Invalid contract address')
       return []
     }
-
-    // Teloscan API endpoint – use the testnet or mainnet URL as appropriate.
+    if (blockNumberFor7DaysAgo === null) {
+      console.error('Block number for 7 days ago is not initialized')
+      return []
+    }
+    // Teloscan API base URL (testnet or mainnet)
     const baseUrl = configuration.testnet.evm.historyAPI
-    const sevenDaysAgoTimestamp = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60
-    const endpoint = `${baseUrl}/v1/token/${tokenContractAddress}/transfers?after=${sevenDaysAgoTimestamp}&limit=500`
+
+    // Build the endpoint using the startblock parameter
+    const endpoint = `${baseUrl}/v1/token/${tokenContractAddress}/transfers?startblock=${blockNumberFor7DaysAgo}&limit=500`
     console.log('endpoint', endpoint)
+
     try {
       const response = await fetch(endpoint)
       if (!response.ok) {
@@ -524,7 +529,6 @@ export const useEvmStore = defineStore('evmStore', () => {
       }
       const rawData: unknown = await response.json()
 
-      // Add a new interface for raw Telos transactions inside fetchTelosContractTransactions
       interface RawTelosTransaction {
         amount: string
         from: string
@@ -543,14 +547,23 @@ export const useEvmStore = defineStore('evmStore', () => {
         return []
       }
 
-      // Process raw transactions into human-readable format.
-      const processedData: TelosContractTransaction[] = items.map((item) => ({
-        amount: Number(ethers.formatEther(item.amount)).toFixed(0),
-        from: item.from,
-        to: item.to,
-        transaction: item.transaction,
-        timestamp: new Date(Number(item.timestamp) * 1000).toISOString(),
-      }))
+      // Process each transaction and normalize the timestamp
+      const processedData: TelosContractTransaction[] = items.map((item) => {
+        let normTimestamp: string
+        if (typeof item.timestamp === 'string') {
+          normTimestamp = normalizeTelosTimestamp(item.timestamp)
+        } else {
+          normTimestamp = String(item.timestamp)
+        }
+        return {
+          amount: Number(ethers.formatEther(item.amount)).toFixed(0),
+          from: item.from,
+          to: item.to,
+          transaction: item.transaction,
+          timestamp: normTimestamp,
+        }
+      })
+
       console.log('processed data', processedData)
       return processedData
     } catch (error) {

@@ -153,7 +153,7 @@
               </template>
               <template v-slot:body-cell-timestamp="props">
                 <q-td :props="props">
-                  {{ props.row.timestamp }}
+                  {{ props.col.format ? props.col.format(props.row.timestamp) : props.row.timestamp }}
                 </q-td>
               </template>
               <template v-slot:body-cell-from="props">
@@ -388,7 +388,27 @@ async function verifyRequest(id: number) {
 
 const telosContractTransactions = ref<TelosContractTransaction[]>([])
 const telosColumns = ref<QTableProps['columns']>([
-  { name: 'timestamp', label: 'Timestamp', field: 'timestamp', sortable: true },
+  {
+    name: 'timestamp',
+    label: 'Timestamp',
+    field: 'timestamp',
+    sortable: true,
+    sort: (a: number | string, b: number | string) =>
+      Number(a) - Number(b),
+    format: (val: number | string) => {
+      // Ensure val is a number
+      const ts = typeof val === 'string' ? parseInt(val, 10) : val;
+      const date = new Date(ts);
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      return (
+        date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) +
+        ' ' +
+        date.toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      );
+    }
+  },
   { name: 'from', label: 'From', field: 'from', sortable: true },
   { name: 'to', label: 'To', field: 'to', sortable: true },
   { name: 'transaction', label: 'Transaction', field: 'transaction', sortable: false },
@@ -396,17 +416,7 @@ const telosColumns = ref<QTableProps['columns']>([
 ])
 
 const formattedTelosTransactions = computed(() => {
-  return telosContractTransactions.value.map(tx => ({
-    ...tx,
-    timestamp: new Date(tx.timestamp).toLocaleString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hourCycle: 'h23'
-    })
-  }))
+  return telosContractTransactions.value;
 })
 
 // Helper functions to shorten addresses and tx hashes.

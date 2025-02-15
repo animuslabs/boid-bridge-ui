@@ -114,3 +114,14 @@ export function hasDataProperty(x: unknown): x is { data: unknown } {
 export function hasResultsProperty(x: unknown): x is { results: unknown } {
   return typeof x === 'object' && x !== null && 'results' in x
 }
+
+export function normalizeTelosTimestamp(ts: string): string {
+  if (ts.startsWith('+') && ts.length >= 7) {
+    // Remove the plus sign and take everything after the first 6 characters (which represent the Telos year)
+    const rest = ts.slice(7) // slice starting from index 7, because index 0 is the '+'
+    const currentYear = new Date().getFullYear().toString() // e.g. "2025"
+    // Return current year + '-' + rest (make sure to insert a hyphen if necessary)
+    return `${currentYear}-${rest}`
+  }
+  return ts
+}
