@@ -1,5 +1,5 @@
 <template>
-  <q-page class="column items-center justify-start q-pt-lg">
+  <q-page class="column items-center justify-start q-pt-md">
     <div class="full-width q-px-xl">
       <q-tabs
         v-model="activeTab"

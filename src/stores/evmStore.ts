@@ -515,7 +515,7 @@ export const useEvmStore = defineStore('evmStore', () => {
     // Teloscan API endpoint – use the testnet or mainnet URL as appropriate.
     const baseUrl = configuration.testnet.evm.historyAPI
     const sevenDaysAgoTimestamp = Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60
-    const endpoint = `${baseUrl}/v1/token/${tokenContractAddress}/transfers?after=${sevenDaysAgoTimestamp}`
+    const endpoint = `${baseUrl}/v1/token/${tokenContractAddress}/transfers?after=${sevenDaysAgoTimestamp}&limit=500`
     console.log('endpoint', endpoint)
     try {
       const response = await fetch(endpoint)
