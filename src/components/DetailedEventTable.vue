@@ -1,8 +1,7 @@
 <template>
-  <div>
     <q-table
       dark
-      class="detailed-event-table"
+      class="event-table"
       :rows="formattedRows"
       :columns="columns"
       row-key="id"
@@ -28,79 +27,38 @@
           </template>
         </q-input>
       </template>
-      <template v-slot:body-cell-status="props">
-        <q-chip
-          :color="props.row.status === 'Completed' ? 'positive' : 'warning'"
-          text-color="white"
-          size="sm"
-        >
-          {{ props.row.status }}
-        </q-chip>
+      <template v-slot:body-cell-time="props">
+        <q-td :props="props">
+          {{ props.col.format ? props.col.format(props.row.timestamp) : props.row.timestamp }}
+        </q-td>
       </template>
-      <template v-slot:body-cell-details="props">
+      <template v-slot:body-cell-event="props">
+        <q-td :props="props">
+          <q-chip color="purple-2" outline dense square>
+            {{ props.row.eventType }}
+          </q-chip>
+        </q-td>
+      </template>
+      <template v-slot:body-cell-transaction="props">
+        <q-td :props="props">
+          <a :href="`${explorer}/tx/${props.row.transactionHash}`" target="_blank" class="hash-link">
+            {{ truncate(props.row.transactionHash) }}
+          </a>
+        </q-td>
+      </template>
+      <template v-slot:body-cell-reason="props">
         <q-td :props="props" class="wrapped-cell">
-          <div class="row-details">
-            <div class="detail-item event-type">
-              <strong>Event:</strong> {{ props.row.eventType }}
+          <div>
+            <div v-if="props.row.reason">
+              {{ props.row.reason }}
             </div>
-            <div v-if="props.row.sender" class="detail-item">
-              <strong>Sender:</strong> {{ truncate(props.row.sender) }}
-              <q-tooltip>{{ props.row.sender }}</q-tooltip>
-            </div>
-            <div v-if="props.row.receiver" class="detail-item">
-              <strong>Receiver:</strong> {{ truncate(props.row.receiver) }}
-              <q-tooltip>{{ props.row.receiver }}</q-tooltip>
-            </div>
-            <div v-if="props.row.token" class="detail-item">
-              <strong>Token:</strong> {{ props.row.token }}
-            </div>
-            <div v-if="props.row.amount" class="detail-item">
-              <strong>Amount:</strong> {{ props.row.amount }} BOID
-            </div>
-            <div v-if="props.row.status" class="detail-item">
-              <strong>Status:</strong>
-              <q-chip
-                :color="props.row.status === '1' ? 'positive' : 'warning'"
-                text-color="white"
-                size="sm"
-              >
-                {{ props.row.status === '1' ? 'Completed' : 'Pending' }}
-              </q-chip>
-            </div>
-            <div v-if="props.row.fromTokenContract" class="detail-item">
-              <strong>From Contract:</strong> {{ truncate(props.row.fromTokenContract) }}
-              <q-tooltip>{{ props.row.fromTokenContract }}</q-tooltip>
-            </div>
-            <div v-if="props.row.fromTokenSymbol" class="detail-item">
-              <strong>From Symbol:</strong> {{ props.row.fromTokenSymbol }}
-            </div>
-            <div v-if="props.row.antelopeTokenContract" class="detail-item">
-              <strong>Antelope Contract:</strong> {{ truncate(props.row.antelopeTokenContract) }}
-              <q-tooltip>{{ props.row.antelopeTokenContract }}</q-tooltip>
-            </div>
-            <div v-if="props.row.antelopeSymbol" class="detail-item">
-              <strong>Antelope Symbol:</strong> {{ props.row.antelopeSymbol }}
-            </div>
-            <div v-if="props.row.memo" class="detail-item">
-              <strong>Memo:</strong> {{ props.row.memo }}
-            </div>
-            <div v-if="props.row.transactionHash" class="detail-item">
-              <strong>Tx:</strong>
-              <a :href="`${explorer}/tx/${props.row.transactionHash}`" target="_blank" class="hash-link">
-                {{ truncate(props.row.transactionHash) }}
-              </a>
-            </div>
-            <div v-if="props.row.reason" class="detail-item">
-              <strong>Reason:</strong> {{ props.row.reason }}
-            </div>
-            <div v-if="props.row.message" class="detail-item">
-              <strong>Message:</strong> {{ props.row.message }}
+            <div v-if="props.row.message">
+              {{ props.row.message }}
             </div>
           </div>
         </q-td>
       </template>
     </q-table>
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -148,9 +106,19 @@ const columns = [
     classes: 'time-column'
   },
   {
-    name: 'details',
-    label: 'EVM Event Details',
-    field: (row: Event) => row
+    name: 'event',
+    label: 'Event',
+    field: 'eventType'
+  },
+  {
+    name: 'transaction',
+    label: 'Transaction',
+    field: 'transactionHash'
+  },
+  {
+    name: 'reason',
+    label: 'Reason (Message)',
+    field: 'reason'
   }
 ]
 
@@ -158,7 +126,7 @@ const expanded = ref([])
 
 const pagination = ref({
   page: 1,
-  rowsPerPage: 15
+  rowsPerPage: 10
 })
 
 function truncate(text: string): string {
@@ -181,36 +149,18 @@ function filterEvents(
 </script>
 
 <style scoped>
-.detailed-event-table {
+.event-table {
   background-color: var(--q-dark);
   color: white;
-  max-height: 600px;
   overflow-y: auto;
-  width: 100%;
-  max-width: 100vw;
+  min-height: 100%;
+  min-width: 480px;
 }
 
 .wrapped-cell {
   white-space: normal;
   max-width: 100%;
   padding: 8px;
-}
-
-.row-details {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  width: 100%;
-}
-
-.detail-item {
-  padding: 4px 8px;
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 4px;
-  margin: 2px;
-  flex: 1 1 auto;
-  min-width: 200px;
-  max-width: 100%;
 }
 
 .hash-link {

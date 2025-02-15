@@ -113,8 +113,96 @@
             </div>
           </template>
           <template v-else>
-            <DetailedEventTable :events="allEvents" class="q-mb-md"/>
-            <DetailedNativeTable :hyperionActions="hyperionActions" />
+            <!-- New table displaying Telos Contract Transactions -->
+            <q-table
+              :rows="formattedTelosTransactions"
+              :columns="telosColumns"
+              dense
+              dark
+              flat
+              bordered
+              v-model:pagination="telosPagination"
+              v-model:filter="telosSearch"
+              :filter-method="(rows, terms, cols, getCellValue) =>
+                rows.filter(row => {
+                  const searchValues = Object.values(row).map(val => String(val).toLowerCase());
+                  if (row.from === '0x0000000000000000000000000000000000000000') {
+                    searchValues.push('mint');
+                  }
+                  if (row.to === '0x0000000000000000000000000000000000000000') {
+                    searchValues.push('burn');
+                  }
+                  return searchValues.some(val => val.includes(terms.toLowerCase()))
+                })"
+              class="q-mt-md evm-trx-table"
+            >
+              <template v-slot:top>
+                <q-input
+                  dark
+                  borderless
+                  dense
+                  debounce="300"
+                  v-model="telosSearch"
+                  placeholder="Search EVM Token Trx..."
+                  style="width: 200px"
+                >
+                  <template v-slot:append>
+                    <q-icon name="search" />
+                  </template>
+                </q-input>
+              </template>
+              <template v-slot:body-cell-timestamp="props">
+                <q-td :props="props">
+                  {{ props.row.timestamp }}
+                </q-td>
+              </template>
+              <template v-slot:body-cell-from="props">
+                <q-td :props="props">
+                  <div v-if="props.row.from === '0x0000000000000000000000000000000000000000'">
+                    <q-chip color="green" text-color="white" outline dense square>Mint Action</q-chip>
+                  </div>
+                  <div v-else>
+                    {{ shortAddress(props.row.from) }}
+                    <q-tooltip>{{ props.row.from }}</q-tooltip>
+                  </div>
+                </q-td>
+              </template>
+              <template v-slot:body-cell-to="props">
+                <q-td :props="props">
+                  <div v-if="props.row.to === '0x0000000000000000000000000000000000000000'">
+                    <q-chip color="red" text-color="white" outline dense square>Burn Action</q-chip>
+                  </div>
+                  <div v-else>
+                    {{ shortAddress(props.row.to) }}
+                    <q-tooltip>{{ props.row.to }}</q-tooltip>
+                  </div>
+                </q-td>
+              </template>
+              <template v-slot:body-cell-transaction="props">
+                <q-td :props="props">
+                  <a
+                    :href="`${configuration.testnet.evm.explorer}/tx/${props.row.transaction}`"
+                    target="_blank"
+                    style="color: #1976d2; text-decoration: underline;"
+                  >
+                    {{ shortTx(props.row.transaction) }}
+                  </a>
+                </q-td>
+              </template>
+              <template v-slot:body-cell-amount="props">
+                <q-td :props="props">
+                  {{ props.row.amount }} BOID
+                </q-td>
+              </template>
+            </q-table>
+            <div v-if="!screen.lt.sm" class="q-mt-md row justify-center">
+              <div class="col-12 col-md-6 q-pa-md">
+                <DetailedNativeTable :hyperionActions="hyperionActions" />
+              </div>
+              <div class="col-12 col-md-6 q-pa-md">
+                <DetailedEventTable :events="allEvents" class="q-mb-md"/>
+              </div>
+            </div>
           </template>
         </q-tab-panel>
       </q-tab-panels>
@@ -124,7 +212,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
-import { useEvmStore, BridgeRequest } from 'src/stores/evmStore'
+import { Screen } from 'quasar'
+import { useEvmStore, BridgeRequest, TelosContractTransaction } from 'src/stores/evmStore'
 import { QTableProps } from 'quasar'
 import DetailedEventTable from 'src/components/DetailedEventTable.vue'
 import DetailedNativeTable from 'src/components/DetailedNativeTable.vue'
@@ -132,6 +221,7 @@ import { Event } from 'src/lib/types/evmEvents'
 import { ActionParams as EvmBoidActionParams, TableTypes as EvmBoidTableTypes } from "src/lib/types/evm.boid";
 import { createEvmBoidAction, fetchDataFromEvmBoidTable } from "src/lib/antelope";
 import { queryAllActions, ActionResponse } from 'src/lib/hyperion'
+import { configuration } from 'src/lib/config'
 
 const evmStore = useEvmStore()
 const loggedEvmAccountFull = computed(() => evmStore.address)
@@ -214,6 +304,7 @@ const loadDetailedData = async () => {
     const bridgeRequests = await evmStore.fetchBridgeRequestEvents()
     const requestRemovalSuccesses = await evmStore.fetchRequestRemovalSuccessEvents()
     const failedRequestCleareds = await evmStore.fetchFailedRequestClearedEvents()
+    telosContractTransactions.value = await evmStore.fetchTelosContractTransactions()
 
     allEvents.value = [
       ...(bridgeTransactions.value?.map(e => ({ ...e, eventType: 'BridgeTransaction' })) || []),
@@ -295,10 +386,60 @@ async function verifyRequest(id: number) {
   activeRequestsTableNative.value = (await fetchDataFromEvmBoidTable('requests')) ?? []
 }
 
+const telosContractTransactions = ref<TelosContractTransaction[]>([])
+const telosColumns = ref<QTableProps['columns']>([
+  { name: 'timestamp', label: 'Timestamp', field: 'timestamp', sortable: true },
+  { name: 'from', label: 'From', field: 'from', sortable: true },
+  { name: 'to', label: 'To', field: 'to', sortable: true },
+  { name: 'transaction', label: 'Transaction', field: 'transaction', sortable: false },
+  { name: 'amount', label: 'Amount', field: 'amount', sortable: true },
+])
+
+const formattedTelosTransactions = computed(() => {
+  return telosContractTransactions.value.map(tx => ({
+    ...tx,
+    timestamp: new Date(tx.timestamp).toLocaleString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23'
+    })
+  }))
+})
+
+// Helper functions to shorten addresses and tx hashes.
+function shortAddress(addr: string): string {
+  return addr.length > 10 ? addr.substring(0, 6) + '...' + addr.substring(addr.length - 4) : addr;
+}
+
+function shortTx(tx: string): string {
+  return tx.length > 10 ? tx.substring(0, 6) + '...' + tx.substring(tx.length - 4) : tx;
+}
+
+const telosPagination = ref({
+  page: 1,
+  rowsPerPage: 10,
+  sortBy: 'timestamp',
+  descending: true
+})
+
+const telosSearch = ref('')
+
+const screen = Screen
 
 </script>
 
 <style>
+.evm-trx-table {
+  background-color: var(--q-dark);
+  color: white;
+  max-height: 600px;
+  overflow-y: auto;
+  min-width: 500px;
+  max-width: 100%;
+}
 /* Target the selected text container within our custom wrapper */
 .custom-qselect .q-field__native span,
 .custom-qselect .q-field__native input {

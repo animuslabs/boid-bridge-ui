@@ -3,8 +3,8 @@ import { useConnect, useAccount, useDisconnect, useWriteContract } from '@wagmi/
 import { configuration } from 'src/lib/config'
 import { abi as bridgeContractAbi } from 'src/lib/TelosEVMContracts/TokenBridge.json'
 import { abi as tokenAbi } from 'src/lib/TelosEVMContracts/TokenContract.json'
-import { BigNumberish, parseEther } from 'ethers'
-import { ethers } from 'ethers'
+import { BigNumberish, parseEther, ethers } from 'ethers'
+import { rabbykit } from 'src/boot/wagmi'
 import {
   bigNumberishToBigInt,
   bigNumberishToString,
@@ -21,6 +21,15 @@ import {
 } from 'src/lib/types/evmEvents'
 import { notifyEvent } from 'src/lib/helperFunctions'
 
+// Define a type for processed Telos contract transactions.
+export interface TelosContractTransaction {
+  amount: string
+  from: string
+  to: string
+  transaction: string
+  timestamp: string
+}
+
 export interface BridgeRequest {
   id: number
   sender: string
@@ -35,9 +44,9 @@ export interface BridgeRequest {
 }
 
 export const useEvmStore = defineStore('evmStore', () => {
-  const { connect, connectors } = useConnect()
-  const { address, isConnected } = useAccount()
   const { disconnect } = useDisconnect()
+  const { connectors } = useConnect()
+  const { address, isConnected } = useAccount()
   const { writeContractAsync } = useWriteContract()
   const tokenContractAddress = configuration.testnet.evm.contracts[1]?.contract as `0x${string}`
   const bridgeContractAddress = configuration.testnet.evm.contracts[0]?.contract as `0x${string}`
@@ -138,21 +147,13 @@ export const useEvmStore = defineStore('evmStore', () => {
     }
   }
 
-  function login(connectorIdx = 0) {
-    const connector = connectors[connectorIdx]
-    if (!connector) {
-      console.error('No connector found')
-      return
-    }
-    try {
-      connect({ connector })
-    } catch (error) {
-      console.error('Failed to connect:', error)
-    }
+  function login() {
+    rabbykit.open()
   }
 
   function logout() {
     disconnect()
+    rabbykit.close()
   }
 
   async function queryActiveRequests(): Promise<BridgeRequest[]> {
@@ -502,6 +503,68 @@ export const useEvmStore = defineStore('evmStore', () => {
     return events
   }
 
+  async function fetchTelosContractTransactions() {
+    // Ensure the contract address is valid.
+    if (!tokenContractAddress?.startsWith('0x')) {
+      console.error('Invalid contract address')
+      return []
+    }
+
+    // Teloscan API endpoint – use the testnet or mainnet URL as appropriate.
+    const baseUrl = configuration.testnet.evm.historyAPI
+    const endpoint = `${baseUrl}/v1/token/${tokenContractAddress}/transfers`
+    console.log('endpoint', endpoint)
+    try {
+      const response = await fetch(endpoint)
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}: ${response.statusText}`)
+      }
+      const rawData: unknown = await response.json()
+
+      // Add a new interface for raw Telos transactions inside fetchTelosContractTransactions
+      interface RawTelosTransaction {
+        amount: string
+        from: string
+        to: string
+        transaction: string
+        timestamp: number | string
+      }
+      let items: RawTelosTransaction[] = []
+
+      if (hasDataProperty(rawData) && Array.isArray(rawData.data)) {
+        items = rawData.data as RawTelosTransaction[]
+      } else if (hasResultsProperty(rawData) && Array.isArray(rawData.results)) {
+        items = rawData.results as RawTelosTransaction[]
+      } else {
+        console.error('Unexpected API response structure:', rawData)
+        return []
+      }
+
+      // Process raw transactions into human-readable format.
+      const processedData: TelosContractTransaction[] = items.map((item) => ({
+        amount: Number(ethers.formatEther(item.amount)).toFixed(0),
+        from: item.from,
+        to: item.to,
+        transaction: item.transaction,
+        timestamp: new Date(Number(item.timestamp) * 1000).toISOString(),
+      }))
+      console.log('processed data', processedData)
+      return processedData
+    } catch (error) {
+      console.error('Error fetching contract transactions:', error)
+      return []
+    }
+  }
+
+  // Add type guards for raw data objects
+  function hasDataProperty(x: unknown): x is { data: unknown } {
+    return typeof x === 'object' && x !== null && 'data' in x
+  }
+
+  function hasResultsProperty(x: unknown): x is { results: unknown } {
+    return typeof x === 'object' && x !== null && 'results' in x
+  }
+
   return {
     address,
     isConnected,
@@ -522,5 +585,6 @@ export const useEvmStore = defineStore('evmStore', () => {
     initBlockNumber7DaysAgo,
     removeRequest,
     queryActiveRequests,
+    fetchTelosContractTransactions,
   }
 })

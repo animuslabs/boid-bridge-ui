@@ -14,6 +14,7 @@ type ChainConfigEVM = {
   chainIdHEX: string
   contracts: Contract[]
   explorer: string
+  historyAPI: string
 }
 
 type ChainConfigNative = {
@@ -75,6 +76,7 @@ export const configuration: Configuration = {
         { name: 'TokenContract', contract: '0xacE76e8611319C443f4DF90FaEEdc48286563D17' },
       ],
       explorer: 'https://teloscan.io',
+      historyAPI: 'https://api.teloscan.io',
     },
   },
   testnet: {
@@ -98,6 +100,7 @@ export const configuration: Configuration = {
         { name: 'TokenContract', contract: '0xacE76e8611319C443f4DF90FaEEdc48286563D17' },
       ],
       explorer: 'https://testnet.teloscan.io',
+      historyAPI: 'https://api.testnet.teloscan.io',
     },
   },
   other: {

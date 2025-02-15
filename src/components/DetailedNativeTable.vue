@@ -1,40 +1,55 @@
 <template>
-  <div class="q-pa-md" style="max-height: 100%; overflow-y: auto; width: 100% !important; max-width: 650px;">
     <q-table
       dark
-      flat bordered
+      flat
+      bordered
       :rows="props.hyperionActions"
       :columns="columns"
       row-key="name"
       class="hyperion-table"
       v-model:pagination="pagination"
       v-model:filter="filter"
+      :filter-method="(rows, terms, cols, getCellValue) => {
+        const searchTerm = terms.toLowerCase();
+        return rows.filter(row => {
+          let combined = '';
+          cols.forEach(col => {
+            let val = getCellValue(col, row);
+            if (typeof val !== 'string') {
+              val = JSON.stringify(val);
+            }
+            combined += val.toLowerCase() + ' ';
+          });
+          return combined.includes(searchTerm);
+        });
+      }"
     >
 
       <template v-slot:top>
-        <q-input
-          dark
-          borderless
-          dense
-          debounce="300"
-          v-model="filter"
-          placeholder="Search native actions..."
-          class="q-mb-sm"
-          style="width: 200px"
-        >
-          <template v-slot:append>
-            <q-icon name="search" />
-          </template>
-        </q-input>
+        <!-- Search Field Row -->
+        <div>
+          <q-input
+            dark
+            dense
+            debounce="300"
+            v-model="filter"
+            placeholder="Search native actions..."
+            style="width: 200px"
+          >
+            <template v-slot:append>
+              <q-icon name="search" />
+            </template>
+          </q-input>
+        </div>
       </template>
 
       <template v-slot:header="props">
         <q-tr :props="props">
-          <q-th auto-width />
           <q-th
             v-for="col in props.cols"
             :key="col.name"
             :props="props"
+            style="text-align: left;"
           >
             {{ col.label }}
           </q-th>
@@ -43,9 +58,6 @@
 
       <template v-slot:body="props">
         <q-tr :props="props">
-          <q-td auto-width>
-            <q-btn size="sm" color="accent" round dense @click="props.expand = !props.expand" :icon="props.expand ? 'remove' : 'add'" />
-          </q-td>
           <q-td>
             {{ columns[0]?.format
                ? columns[0].format(props.row.timestamp, props.row)
@@ -53,23 +65,19 @@
            }}
           </q-td>
           <q-td>
-            {{ props.row.act.name }}
+            <q-chip color="purple-2" outline dense square>
+              {{ props.row.act.name }}
+            </q-chip>
           </q-td>
           <q-td>
-            Acc: {{ props.row.act.account }} | Trx: <a :href="`${explorer}/transaction/${props.row.trx_id}`" target="_blank" class="hash-link">
+            <a :href="`${explorer}/transaction/${props.row.trx_id}`" target="_blank" class="hash-link">
               {{ truncate(props.row.trx_id) }}
             </a>
-          </q-td>
-        </q-tr>
-        <q-tr v-show="props.expand" :props="props">
-          <q-td colspan="100%">
-            <div class="text-left">{{ JSON.stringify(props.row.data) }}.</div>
           </q-td>
         </q-tr>
       </template>
 
     </q-table>
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -85,7 +93,7 @@ const truncate = (text: string): string => {
 }
 const pagination = ref({
   page: 1,
-  rowsPerPage: 5
+  rowsPerPage: 10
 })
 const explorer = configuration.testnet.native.explorer
 const props = defineProps<{
@@ -123,6 +131,10 @@ const filter = ref('')
 .hyperion-table {
   background-color: var(--q-dark);
   color: white;
+  min-width: 100%;
+  max-width: 350px;
+  min-height: 100%;
+  overflow-y: auto;
 }
 
 .hash-link {
