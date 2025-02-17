@@ -15,6 +15,7 @@
         type="text"
         label="EVM destination address"
         filled
+        stack-label
         style="background-color: var(--secondary); inline-size: 340px;"
         label-color="white"
         color="white"
@@ -36,6 +37,7 @@
           <q-input
             v-model.number="boidTokenAmount"
             type="number"
+            stack-label
             label="token amount"
             filled
             style="background-color: var(--secondary); inline-size: 200px;"

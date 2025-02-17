@@ -15,7 +15,8 @@
         color="secondary"
         text-color="white"
         no-caps
-        class="full-width"
+        rounded
+        class="full-width glossy"
         @click="onEvmLogin"
       >
         <q-tooltip v-if="isEvmLoggedIn">

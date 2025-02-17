@@ -16,6 +16,7 @@
         type="text"
         label="Destination Address"
         filled
+        stack-label
         style="background-color: var(--secondary); inline-size: 340px;"
         :readonly="showBoidId"
         :style="computedInputStyle"
@@ -33,6 +34,7 @@
         type="text"
         label="Boid ID"
         filled
+        stack-label
         :style="getInputStyle()"
         label-color="white"
         color="white"
@@ -68,6 +70,7 @@
             type="number"
             label="token amount"
             filled
+            stack-label
             style="background-color: var(--secondary); inline-size: 200px;"
             label-color="white"
             color="white"
