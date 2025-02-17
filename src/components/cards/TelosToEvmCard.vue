@@ -69,7 +69,7 @@
     label="Transfer to Telos EVM"
     color="primary"
     no-caps
-    class="full-width q-mt-sm"
+    class="full-width q-mt-sm glossy"
     :disable="!isAddressValid || !isTransferValid || !canCoverFee"
     @click="handleToEVMTransfer"
   >

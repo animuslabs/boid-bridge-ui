@@ -103,7 +103,7 @@
     label="Transfer to Telos Native"
     color="primary"
     no-caps
-    class="full-width q-mt-sm"
+    class="full-width q-mt-sm glossy"
     :disable="!isValid"
     @click="handleToNativeTransfer()"
   >

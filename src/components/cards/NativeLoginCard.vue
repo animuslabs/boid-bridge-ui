@@ -15,7 +15,6 @@
         color="secondary"
         text-color="white"
         no-caps
-        rounded
         class="full-width glossy"
         @click="onNativeLogin($event)"
       />
