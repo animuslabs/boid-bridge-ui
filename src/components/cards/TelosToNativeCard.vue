@@ -118,6 +118,7 @@ import { ref, watch, computed, watchEffect, onMounted, onActivated } from "vue";
 import { loadAccount, fetchDataFromBoidTable } from "src/lib/antelope"; // Adjust import path
 import { useEvmStore } from 'src/stores/evmStore'
 import { parseEther } from 'ethers';
+import { Notify } from 'quasar';
 
 const evmStore = useEvmStore()
 
@@ -311,58 +312,46 @@ function validateInteger() {
   }
 }
 async function handleToNativeTransfer() {
-  if (!boidTokenAmountEvm.value) {
-    console.error("No token amount provided");
-    return;
-  }
-  const amount = parseEther(boidTokenAmountEvm.value.toString());
-  console.log("handleToNativeTransfer");
-  console.log("boidTokenAmountEvm", boidTokenAmountEvm.value);
-  console.log("amount", amount);
-
-  // Add this to log both address and boid ID:
-  console.log("Destination Address:", destinationAddress.value);
-  console.log("Boid ID:", boidId.value || "N/A");
-
-  // Read the current allowance
-  let currentAllowance = await evmStore.getTokenAllowance(loggedAccountFull.value as `0x${string}`);
-  console.log("currentAllowance", currentAllowance);
-
-  // Compare allowance < desired amount
-  if (currentAllowance < amount) {
-    console.log(
-      `Current allowance = ${currentAllowance.toString()}. ` +
-      `Needs approval for at least ${amount.toString()}...`
-    );
-
-    // Approve the token
-    const approveTx = await evmStore.userApprovedToken(amount);
-    if (!approveTx) {
-      console.error("approveTx transaction not returned");
-      return;
+  try {
+    if (!boidTokenAmountEvm.value) {
+      throw new Error("No token amount provided");
     }
 
-    // Optionally re-check allowance (if you like) to confirm it updated
-    currentAllowance = await evmStore.getTokenAllowance(evmStore.address as `0x${string}`);
-    console.log(`New allowance: ${currentAllowance.toString()}`);
-  } else {
-    console.log(
-      `Sufficient allowance: ${currentAllowance.toString()} (needed: ${amount.toString()})`
-    );
-  }
+    const amount = parseEther(boidTokenAmountEvm.value.toString());
+    console.log("handleToNativeTransfer");
+    console.log("boidTokenAmountEvm", boidTokenAmountEvm.value);
+    console.log("amount", amount);
 
-  // Now do the bridging transaction
-  const bridgeTx = await evmStore.bridgeToken(
-    amount,
-    destinationAddress.value,
-    boidId.value ? `deposit boid_id=${boidId.value}` : "Bridge Transfer"
-  );
-  // refresh BOID balance with a delay
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  await updateBoidBalance();
-  if (!bridgeTx) {
-    console.error("bridgeTx transaction not returned");
-    return;
+    // Read the current allowance
+    let currentAllowance = await evmStore.getTokenAllowance(loggedAccountFull.value as `0x${string}`);
+    console.log("currentAllowance", currentAllowance);
+
+    if (currentAllowance < amount) {
+      console.log(`Current allowance = ${currentAllowance.toString()}. Needs approval for at least ${amount.toString()}...`);
+      const approveTx = await evmStore.userApprovedToken(amount);
+      if (!approveTx) {
+        throw new Error("Approval transaction did not return a result");
+      }
+      currentAllowance = await evmStore.getTokenAllowance(evmStore.address as `0x${string}`);
+      console.log(`New allowance: ${currentAllowance.toString()}`);
+    } else {
+      console.log(`Sufficient allowance: ${currentAllowance.toString()} (needed: ${amount.toString()})`);
+    }
+
+    const bridgeTx = await evmStore.bridgeToken(
+      amount,
+      destinationAddress.value,
+      boidId.value ? `deposit boid_id=${boidId.value}` : "Bridge Transfer"
+    );
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    await updateBoidBalance();
+    if (!bridgeTx) {
+      throw new Error("Bridge transaction did not return a result");
+    }
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error in handleToNativeTransfer:", errMessage);
+    Notify.create({ color: 'negative', message: `Error initiating transfer: ${errMessage}`, position: 'top' });
   }
 }
 

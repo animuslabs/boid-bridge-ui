@@ -90,6 +90,7 @@ import { useSessionStore } from 'src/stores/sessionStore';
 import { createEosioAndBoidTokenActions, fetchDataFromTokenBoidTable } from "src/lib/antelope";
 import { ActionParams as EosioTokenActionParams } from "src/lib/types/eosio.token";
 import { ActionParams as TokenBoidActionParams } from "src/lib/types/token.boid";
+import { Notify } from 'quasar';
 
 // Define props
 defineProps<{
@@ -146,32 +147,32 @@ async function getAccBOIDbalance(actor: string): Promise<number> {
 
 // Handle Transfer Button Click
 const handleToEVMTransfer = async () => {
-  if (!isAddressValid.value || !isTransferValid.value) {
-    console.error('Invalid transfer parameters');
-    return;
-  }
-
-  const feeTransferAction: EosioTokenActionParams.transfer = {
-    from: Name.from(sessionStore.session?.actor?.toString() || ""),
-    to: Name.from(configuration.mainnet.native.contracts[2]?.contract.toString() || ""),
-    quantity: Asset.from(configuration.other.bridge_fee + "000 " + configuration.other.evm_token_symbol),
-    memo: "Fee",
-  };
-
-  const transferBOIDaction: TokenBoidActionParams.transfer = {
-    from: Name.from(sessionStore.session?.actor?.toString() || ""),
-    to: Name.from(configuration.mainnet.native.contracts[2]?.contract.toString() || ""),
-    quantity: Asset.from(boidTokenAmount.value !== null ? `${boidTokenAmount.value}.0000 BOID` : "0.0000 BOID"),
-    memo: evmAddress.value,
-  };
-
   try {
+    if (!isAddressValid.value || !isTransferValid.value) {
+      throw new Error("Invalid transfer parameters");
+    }
+
+    const feeTransferAction: EosioTokenActionParams.transfer = {
+      from: Name.from(sessionStore.session?.actor?.toString() || ""),
+      to: Name.from(configuration.mainnet.native.contracts[2]?.contract.toString() || ""),
+      quantity: Asset.from(configuration.other.bridge_fee + "000 " + configuration.other.evm_token_symbol),
+      memo: "Fee",
+    };
+
+    const transferBOIDaction: TokenBoidActionParams.transfer = {
+      from: Name.from(sessionStore.session?.actor?.toString() || ""),
+      to: Name.from(configuration.mainnet.native.contracts[2]?.contract.toString() || ""),
+      quantity: Asset.from(boidTokenAmount.value !== null ? `${boidTokenAmount.value}.0000 BOID` : "0.0000 BOID"),
+      memo: evmAddress.value,
+    };
+
     await createEosioAndBoidTokenActions(
       "transfer",
       feeTransferAction,
       "transfer",
       transferBOIDaction
     );
+
     // Wait briefly for the blockchain to register the transfer, then update the BOID token balance
     setTimeout(() => {
       void (async () => {
@@ -179,11 +180,13 @@ const handleToEVMTransfer = async () => {
           boidBalance.value = await getAccBOIDbalance(sessionStore.session.actor.toString());
         }
       })();
-    }, 2000); // 2-second delay before updating balance
-  } catch (e) {
-    console.error("Transfer failed:", e);
+    }, 2000);
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : String(error);
+    console.error("Transfer failed:", errMessage);
+    Notify.create({ color: 'negative', message: `Transfer failed: ${errMessage}`, position: 'top' });
   }
-};
+}
 
 // Update balance on session changes
 watch(() => sessionStore.session, async (newSession) => {
@@ -205,4 +208,6 @@ watch(boidTokenAmount, (newValue) => {
     boidTokenAmount.value = Math.floor(newValue);
   }
 });
+
+defineExpose({ handleToEVMTransfer });
 </script>

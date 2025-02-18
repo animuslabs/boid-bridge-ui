@@ -212,7 +212,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
-import { Screen } from 'quasar'
+import { Screen, Notify } from 'quasar'
 import { useEvmStore, BridgeRequest, TelosContractTransaction } from 'src/stores/evmStore'
 import { QTableProps } from 'quasar'
 import DetailedEventTable from 'src/components/DetailedEventTable.vue'
@@ -338,13 +338,45 @@ const formattedRows = computed(() => {
   }))
 })
 
+async function refreshRequests() {
+  await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for blockchain state
+  activeRequestsOnEvm.value = await evmStore.queryActiveRequests();
+  activeRequestsTableNative.value = (await fetchDataFromEvmBoidTable('requests')) ?? [];
+}
+
+async function approveRequest(id: number) {
+  try {
+    const action: EvmBoidActionParams.reqnotify = { req_id: id }
+    const result = await createEvmBoidAction('reqnotify', action)
+    console.log('Request approved:', result)
+    await refreshRequests()
+  } catch (error) {
+    console.error('Error approving request:', error)
+    Notify.create({ color: 'negative', message: 'Error approving request. Please try again.', position: 'top' })
+  }
+}
+
+async function verifyRequest(id: number) {
+  try {
+    const action: EvmBoidActionParams.verifytrx = { req_id: BigInt(id) }
+    const result = await createEvmBoidAction('verifytrx', action)
+    console.log('Request verified:', result)
+    await refreshRequests()
+  } catch (error) {
+    console.error('Error verifying request:', error)
+    Notify.create({ color: 'negative', message: 'Error verifying request. Please try again.', position: 'top' })
+  }
+}
+
 async function deleteRequest(id: number) {
   try {
     const result = await evmStore.removeRequest(id)
     console.log('Request removed:', result)
-    activeRequestsOnEvm.value = await evmStore.queryActiveRequests()
+    await refreshRequests()
+    Notify.create({ color: 'positive', message: 'Request removed successfully', position: 'top' })
   } catch (error) {
     console.error('Error removing request:', error)
+    Notify.create({ color: 'negative', message: 'Error removing request. Please try again.', position: 'top' })
   }
 }
 
@@ -368,23 +400,6 @@ watch(loggedEvmAccountFull, async (newAccount) => {
     activeRequestsOnEvm.value = await evmStore.queryActiveRequests()
   }
 })
-
-async function approveRequest(id: number) {
-  const action: EvmBoidActionParams.reqnotify = {
-    req_id: id,
-  }
-  const result = await createEvmBoidAction('reqnotify', action)
-  console.log('Request approved:', result)
-  activeRequestsOnEvm.value = await evmStore.queryActiveRequests()
-}
-async function verifyRequest(id: number) {
-  const action: EvmBoidActionParams.verifytrx = {
-    req_id: BigInt(id),
-  }
-  const result = await createEvmBoidAction('verifytrx', action)
-  console.log('Request verified:', result)
-  activeRequestsTableNative.value = (await fetchDataFromEvmBoidTable('requests')) ?? []
-}
 
 const telosContractTransactions = ref<TelosContractTransaction[]>([])
 const telosColumns = ref<QTableProps['columns']>([
