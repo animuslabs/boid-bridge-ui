@@ -77,7 +77,7 @@
             <div class="text-h6 text-white q-mb-md q-mt-lg">Release Tokens <q-icon name="info" color="white">
               <q-tooltip>Unverified Requests on Telos Native side.</q-tooltip></q-icon></div>
             <q-table
-              :rows="activeRequestsTableNative"
+              :rows="sortedNativeRequests"
               :columns="nativeColumns"
               dark
               flat
@@ -453,6 +453,16 @@ const telosPagination = ref({
 const telosSearch = ref('')
 
 const screen = Screen
+
+const sortedNativeRequests = computed(() => {
+  return activeRequestsTableNative.value.slice().sort((a, b) => {
+    if (a.processed === b.processed) {
+      return new Date(String(b.timestamp)).getTime() - new Date(String(a.timestamp)).getTime();
+    }
+    // pending (processed false) comes before processed true
+    return a.processed ? 1 : -1;
+  });
+});
 
 </script>
 
