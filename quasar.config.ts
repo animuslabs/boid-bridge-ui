@@ -50,7 +50,8 @@ export default defineConfig((/* ctx */) => {
 
       // rebuildCache: true, // rebuilds Vite/linter/etc cache on startup
 
-      // publicPath: '/',
+      // Set to a relative path so assets load correctly on Netlify
+      publicPath: './',
       // analyze: true,
       // env: {},
       // rawDefine: {}
