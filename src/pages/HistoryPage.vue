@@ -248,7 +248,7 @@ const nativeColumns = ref<QTableProps['columns']>([
   { name: 'id', label: 'ID', field: (row) => Number(row.request_id), sortable: true },
   { name: 'sender', label: 'Sender', field: 'sender', sortable: true },
   { name: 'receiver', label: 'Receiver', field: (row) => `${row.receiver}`, sortable: true },
-  { name: 'amount', label: 'Amount', field: (row) => `${row.amount} BOID`, sortable: true },
+  { name: 'amount', label: 'Amount', field: (row) => `${row.amount / 10000} BOID`, sortable: true },
   {
     name: 'timestamp',
     label: 'Created At',
