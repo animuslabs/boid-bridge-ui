@@ -47,16 +47,13 @@
 </template>
 <script setup lang="ts">
 import { ref } from 'vue'
-import { defineExpose } from 'vue'
 
 const infoDialog = ref(false)
 
+ 
 const showInfo = () => {
   infoDialog.value = true
 }
 
-// Expose methods to parent component
-defineExpose({
-  showInfo
-})
+defineExpose({ showInfo })
 </script>
