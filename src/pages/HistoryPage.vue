@@ -181,7 +181,7 @@
               <template v-slot:body-cell-transaction="props">
                 <q-td :props="props">
                   <a
-                    :href="`${configuration.testnet.evm.explorer}/tx/${props.row.transaction}`"
+                    :href="`${configuration.mainnet.evm.explorer}/tx/${props.row.transaction}`"
                     target="_blank"
                     style="color: #1976d2; text-decoration: underline;"
                   >

@@ -38,7 +38,7 @@ const sessionStore = useSessionStore()
 
 async function getAPIClient(): Promise<APIClient> {
   // const url = await getWorkingUrl(configuration.mainnet.native.apis.map((api) => api.url))
-  const url = await getWorkingUrl(configuration.testnet.native.apis.map((api) => api.url))
+  const url = await getWorkingUrl(configuration.mainnet.native.apis.map((api) => api.url))
   if (!url) {
     throw new Error(`Invalid url: ${url}.`)
   }

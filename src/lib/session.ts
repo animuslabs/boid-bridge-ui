@@ -13,16 +13,16 @@ const webRenderer = new WebRenderer()
 // Resilient chains configuration
 async function getResilientChains() {
   return {
-    // mainnet: {
-    //   id: configuration.mainnet.native.chain_id,
-    //   url: await getWorkingUrl(configuration.mainnet.native.apis.map(api => api.url)), // Validate URLs
-    //   logo: "./Telos-circle.png",
+    mainnet: {
+      id: configuration.mainnet.native.chain_id,
+      url: await getWorkingUrl(configuration.mainnet.native.apis.map(api => api.url)), // Validate URLs
+      logo: "./Telos-circle.png",
+    }
+    // testnet: {
+    //   id: configuration.testnet.native.chain_id,
+    //   url: await getWorkingUrl(configuration.testnet.native.apis.map((api) => api.url)), // Validate URLs
+    //   logo: './Telos-circle.png',
     // },
-    testnet: {
-      id: configuration.testnet.native.chain_id,
-      url: await getWorkingUrl(configuration.testnet.native.apis.map((api) => api.url)), // Validate URLs
-      logo: './Telos-circle.png',
-    },
   }
 }
 
@@ -34,8 +34,8 @@ async function initializeSessionKit() {
   sessionKit = new SessionKit({
     appName: 'BoidBridge',
     chains: [
-      // chains.mainnet,
-      chains.testnet,
+      chains.mainnet,
+      // chains.testnet,
     ],
     ui: webRenderer,
     walletPlugins: [new WalletPluginAnchor()],

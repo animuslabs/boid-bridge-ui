@@ -51,9 +51,9 @@ export const useEvmStore = defineStore('evmStore', () => {
   const { connectors } = useConnect()
   const { address, isConnected } = useAccount()
   const { writeContractAsync } = useWriteContract()
-  const tokenContractAddress = configuration.testnet.evm.contracts[1]?.contract as `0x${string}`
-  const bridgeContractAddress = configuration.testnet.evm.contracts[0]?.contract as `0x${string}`
-  const ethersUrl = configuration.testnet.evm.apis[0]?.url || ''
+  const tokenContractAddress = configuration.mainnet.evm.contracts[1]?.contract as `0x${string}`
+  const bridgeContractAddress = configuration.mainnet.evm.contracts[0]?.contract as `0x${string}`
+  const ethersUrl = configuration.mainnet.evm.apis[0]?.url || ''
   const ethersProvider = new ethers.JsonRpcProvider(ethersUrl) // Replace with your RPC URL
 
   // Variable to store the block number for 30 days ago
@@ -516,7 +516,7 @@ export const useEvmStore = defineStore('evmStore', () => {
       return []
     }
     // Teloscan API base URL (testnet or mainnet)
-    const baseUrl = configuration.testnet.evm.historyAPI
+    const baseUrl = configuration.mainnet.evm.historyAPI
 
     // Build the endpoint using the startblock parameter
     const endpoint = `${baseUrl}/v1/token/${tokenContractAddress}/transfers?startblock=${blockNumberFor7DaysAgo}&limit=500`

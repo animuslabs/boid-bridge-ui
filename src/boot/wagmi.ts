@@ -19,28 +19,28 @@ const telosEvmMainnet = {
   },
 }
 
-const telosEvmTestnet = {
-  id: Number(configuration.testnet.evm.chain_id),
-  name: configuration.testnet.evm.apis[0]?.name || 'Telos EVM Testnet',
-  network: 'telos-testnet',
-  nativeCurrency: {
-    name: configuration.other.evm_token_name,
-    symbol: configuration.other.evm_token_symbol,
-    decimals: configuration.other.evm_token_decimals,
-  },
-  rpcUrls: {
-    default: { http: [configuration.testnet.evm.apis[0]?.url || ''] },
-  },
-}
+// const telosEvmTestnet = {
+//   id: Number(configuration.testnet.evm.chain_id),
+//   name: configuration.testnet.evm.apis[0]?.name || 'Telos EVM Testnet',
+//   network: 'telos-testnet',
+//   nativeCurrency: {
+//     name: configuration.other.evm_token_name,
+//     symbol: configuration.other.evm_token_symbol,
+//     decimals: configuration.other.evm_token_decimals,
+//   },
+//   rpcUrls: {
+//     default: { http: [configuration.testnet.evm.apis[0]?.url || ''] },
+//   },
+// }
 
 const config = createConfig(
   getDefaultConfig({
     appName: 'BOID Bridge',
     projectId: 'boid-bridge',
-    chains: [telosEvmMainnet, telosEvmTestnet],
+    chains: [telosEvmMainnet],
     transports: {
       [telosEvmMainnet.id]: http(),
-      [telosEvmTestnet.id]: http(),
+      // [telosEvmTestnet.id]: http(),
     },
   }),
 )

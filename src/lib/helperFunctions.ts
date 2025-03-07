@@ -83,7 +83,7 @@ export function customBytes32ToString(bytes32: string): string {
 }
 
 export function showNotification(transactionId: string, isError = false, isEvm = false): void {
-  const baseUrl = isEvm ? configuration.testnet.evm.explorer : configuration.testnet.native.explorer
+  const baseUrl = isEvm ? configuration.mainnet.evm.explorer : configuration.mainnet.native.explorer
   const transactionUrl = isEvm
     ? `${baseUrl}/tx/${transactionId}`
     : `${baseUrl}/transaction/${transactionId}`

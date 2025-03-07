@@ -95,7 +95,7 @@ const pagination = ref({
   page: 1,
   rowsPerPage: 10
 })
-const explorer = configuration.testnet.native.explorer
+const explorer = configuration.mainnet.native.explorer
 const props = defineProps<{
   hyperionActions: ActionResponse[]
 }>()

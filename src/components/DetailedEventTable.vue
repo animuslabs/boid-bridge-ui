@@ -66,7 +66,7 @@ import { computed, ref } from 'vue'
 import { Event } from 'src/lib/types/evmEvents'
 import { configuration } from 'src/lib/config'
 
-const explorer = configuration.testnet.evm.explorer
+const explorer = configuration.mainnet.evm.explorer
 const props = defineProps<{
   events: Event[]
 }>()

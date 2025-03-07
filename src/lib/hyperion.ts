@@ -6,7 +6,7 @@ import { ActionNameParams as EvmBoidNameParams } from 'src/lib/types/evm.boid'
 import { ActionNameParams as XsendBoidNameParams } from 'src/lib/types/xsend.boid'
 
 const client = new APIClient({
-  provider: new FetchProvider(configuration.testnet.native.hyperion), // Use a real provider here
+  provider: new FetchProvider(configuration.mainnet.native.hyperion), // Use a real provider here
 })
 
 export interface ContractEvmBoidActionResponse<

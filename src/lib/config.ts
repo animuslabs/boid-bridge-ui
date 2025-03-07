@@ -72,8 +72,8 @@ export const configuration: Configuration = {
       chain_id: '40',
       chainIdHEX: '0x28', // 40 in hex
       contracts: [
-        { name: 'TokenBridge', contract: '0xF50d9a830e24bDb0A2b3A4b58C6f746375f369b2' },
-        { name: 'TokenContract', contract: '0xacE76e8611319C443f4DF90FaEEdc48286563D17' },
+        { name: 'TokenBridge', contract: '0x6032E5218e1fb6ec2803BA2D7af385fB15D14466' },
+        { name: 'TokenContract', contract: '0xF07f8D13F57dF3572b284FB701cEF021C62a68Ab' },
       ],
       explorer: 'https://teloscan.io',
       historyAPI: 'https://api.teloscan.io',
