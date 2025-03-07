@@ -162,89 +162,89 @@ export const useEvmStore = defineStore('evmStore', () => {
   async function queryActiveRequests(): Promise<BridgeRequest[]> {
     if (!bridgeContractAddress?.startsWith('0x')) return Promise.resolve([])
 
-    // Get array length from slot 10
-    const lengthHex = await ethersProvider.getStorage(bridgeContractAddress, 10)
-    const length = Number(BigInt(lengthHex))
+    try {
+      // Get array length from slot 10
+      const lengthHex = await ethersProvider.getStorage(bridgeContractAddress, 10)
+      const length = Number(BigInt(lengthHex))
 
-    // Get all elements from the array
-    const activeIds: bigint[] = []
-    const arrayBaseSlot = ethers.keccak256(new ethers.AbiCoder().encode(['uint256'], [10]))
+      // Get all elements from the array
+      const activeIds: bigint[] = []
+      const arrayBaseSlot = ethers.keccak256(new ethers.AbiCoder().encode(['uint256'], [10]))
 
-    for (let i = 0; i < length; i++) {
-      const slot = BigInt(arrayBaseSlot) + BigInt(i)
-      const idHex = await ethersProvider.getStorage(bridgeContractAddress, '0x' + slot.toString(16))
-      activeIds.push(BigInt(idHex))
-    }
-
-    // Fetch all requests in parallel
-    const requests = await Promise.all(
-      activeIds.map(async (requestId) => {
+      for (let i = 0; i < length; i++) {
+        const slot = BigInt(arrayBaseSlot) + BigInt(i)
+        // Ensure proper hex formatting with ethers.zeroPadValue
+        const slotHex = ethers.zeroPadValue(ethers.toBeHex(slot), 32)
         try {
-          const baseSlot = ethers.keccak256(
-            new ethers.AbiCoder().encode(['uint256', 'uint256'], [requestId, 9]),
-          )
-
-          // Read all required slots
-          const [sender, amount, requestedAt, tokenContract, symbol, receiver, packedData, memo] =
-            await Promise.all([
-              ethersProvider.getStorage(
-                bridgeContractAddress,
-                '0x' + (BigInt(baseSlot) + 1n).toString(16),
-              ),
-              ethersProvider.getStorage(
-                bridgeContractAddress,
-                '0x' + (BigInt(baseSlot) + 2n).toString(16),
-              ),
-              ethersProvider.getStorage(
-                bridgeContractAddress,
-                '0x' + (BigInt(baseSlot) + 3n).toString(16),
-              ),
-              ethersProvider.getStorage(
-                bridgeContractAddress,
-                '0x' + (BigInt(baseSlot) + 4n).toString(16),
-              ),
-              ethersProvider.getStorage(
-                bridgeContractAddress,
-                '0x' + (BigInt(baseSlot) + 5n).toString(16),
-              ),
-              ethersProvider.getStorage(
-                bridgeContractAddress,
-                '0x' + (BigInt(baseSlot) + 6n).toString(16),
-              ),
-              ethersProvider.getStorage(
-                bridgeContractAddress,
-                '0x' + (BigInt(baseSlot) + 7n).toString(16),
-              ),
-              ethersProvider.getStorage(
-                bridgeContractAddress,
-                '0x' + (BigInt(baseSlot) + 8n).toString(16),
-              ),
-            ])
-
-          const packedValue = BigInt(packedData)
-          const evmDecimals = Number(packedValue & 0xffn)
-          const status = String((packedValue >> 8n) & 0xffn)
-
-          return {
-            id: Number(requestId),
-            sender: '0x' + sender.slice(-40), // Extract address from bytes32
-            amount: Number(ethers.formatUnits(BigInt(amount), evmDecimals)).toFixed(0),
-            requested_at: new Date(Number(BigInt(requestedAt)) * 1000),
-            antelope_token_contract: customBytes32ToString(tokenContract),
-            antelope_symbol: customBytes32ToString(symbol),
-            receiver: customBytes32ToString(receiver),
-            evm_decimals: evmDecimals,
-            status: status,
-            memo: customBytes32ToString(memo),
-          }
+          const idHex = await ethersProvider.getStorage(bridgeContractAddress, slotHex)
+          activeIds.push(BigInt(idHex))
         } catch (error) {
-          console.error(`Error processing request ${requestId}:`, error)
-          return null
+          console.warn(`Error fetching ID at index ${i}:`, error)
+          continue // Skip this ID and continue with others
         }
-      }),
-    )
+      }
 
-    return requests.filter((req) => req !== null) as BridgeRequest[]
+      // Fetch all requests in parallel
+      const requests = await Promise.all(
+        activeIds.map(async (requestId) => {
+          try {
+            const baseSlot = ethers.keccak256(
+              new ethers.AbiCoder().encode(['uint256', 'uint256'], [requestId, 9]),
+            )
+
+            // Read all required slots with proper hex formatting
+            const slots = Array.from({ length: 8 }, (_, i) => {
+              const slotOffset = BigInt(baseSlot) + BigInt(i + 1)
+              return ethers.zeroPadValue(ethers.toBeHex(slotOffset), 32)
+            })
+
+            const [sender, amount, requestedAt, tokenContract, symbol, receiver, packedData, memo] =
+              await Promise.all(
+                slots.map((slot) => ethersProvider.getStorage(bridgeContractAddress, slot)),
+              )
+
+            // Add null checks for all values
+            if (
+              !sender ||
+              !amount ||
+              !requestedAt ||
+              !tokenContract ||
+              !symbol ||
+              !receiver ||
+              !packedData ||
+              !memo
+            ) {
+              throw new Error('Missing data for request')
+            }
+
+            const packedValue = BigInt(packedData)
+            const evmDecimals = Number(packedValue & 0xffn)
+            const status = String((packedValue >> 8n) & 0xffn)
+
+            return {
+              id: Number(requestId),
+              sender: '0x' + sender.slice(-40), // Extract address from bytes32
+              amount: Number(ethers.formatUnits(BigInt(amount), evmDecimals)).toFixed(0),
+              requested_at: new Date(Number(BigInt(requestedAt)) * 1000),
+              antelope_token_contract: customBytes32ToString(tokenContract),
+              antelope_symbol: customBytes32ToString(symbol),
+              receiver: customBytes32ToString(receiver),
+              evm_decimals: evmDecimals,
+              status: status,
+              memo: customBytes32ToString(memo),
+            }
+          } catch (error) {
+            console.error(`Error processing request ${requestId}:`, error)
+            return null
+          }
+        }),
+      )
+
+      return requests.filter((req) => req !== null) as BridgeRequest[]
+    } catch (error) {
+      console.error('Failed to query active requests:', error)
+      return [] // Return empty array instead of failing
+    }
   }
 
   async function getBOIDTokenBalance(account: `0x${string}`): Promise<bigint> {
